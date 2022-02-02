@@ -51,3 +51,10 @@
     box-sizing: border-box;
     line-height:1em;
 }
+
+.coresheet > tbody > tr > td[data-logical-state="focus"],
+.coresheet > thead > tr > td[data-logical-state="focus"]
+{
+    background-color: red;
+}
+
