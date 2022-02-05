@@ -10,6 +10,7 @@ class Grid {
         this._createTable();
     }
 
+
     _createTable() {
         this.element.classList.add("coresheet_container");
         let inner_el = document.createElement("div");
@@ -45,6 +46,7 @@ class Grid {
             _el.setAttribute("data-grid-y", 0);
             _el.setAttribute("data-grid-x", idx+SPACER_COLS);
             _el.setAttribute("data-logical-x", idx);
+            _el.setAttribute("data-header-cell", "");
             _el.textContent = header_elem["name"];
             header_row.appendChild(_el);
             column_order.push(header_elem["name"]);
@@ -88,23 +90,38 @@ class Grid {
     }
 
     set focusedCell(cell_element) {
-        this.#focused_cell = cell_element;
         const all_cells = this.table_element.querySelectorAll("td");
         for (const cell of all_cells)
         {
             cell.setAttribute("data-logical-state", "neutral");
         }
-        this.#focused_cell.setAttribute("data-logical-state", "focus");
+        this.#focused_cell = cell_element;
+        if (cell_element != null) {
+            this.#focused_cell.setAttribute("data-logical-state", "focus");
+        }
     }
 
     get focusedCell() {
-
+        return this.#focused_cell;
     }
 
     tableCellOnClick(e) {
         //const parent_table = e.target.closest("table");
-        this.focusedCell = e.target;
+        if (e.target.hasAttribute("data-header-cell")) {
+            const all_cells = this.table_element.querySelectorAll("td");
+            for (const cell of all_cells)
+            {
+                cell.setAttribute("data-logical-state", "neutral");
+            }
+            var col_idx = e.target.getAttribute("data-grid-x");
+            for (const cell of this.table_element.querySelectorAll(`td[data-grid-x="${col_idx}"]`))
+            {
+                cell.setAttribute("data-logical-state", "selected");
+            }
+        } else {
+            this.focusedCell = e.target;
 
+        }
     }
 }
 

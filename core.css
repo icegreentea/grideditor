@@ -58,3 +58,8 @@
     background-color: red;
 }
 
+.coresheet > tbody > tr > td[data-logical-state="selected"],
+.coresheet > thead > tr > td[data-logical-state="selected"]
+{
+    background-color: salmon;
+}
