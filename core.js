@@ -9,6 +9,9 @@ class Grid {
         this.data = data;
 
         this._createTable();
+        this.selection_manager = new SelectionManager(this.table_element);
+        this.table_element.addEventListener("tableselectionchanged", e => this.tableSelectionChanged(e));
+
     }
 
 
@@ -42,6 +45,9 @@ class Grid {
         let SPACER_COLS = 1;
         let SPACER_ROWS = 1;
     
+
+        /* Creating headers
+        */
         for (const [idx, header_elem] of this.header_data.entries()) {
             let _el = document.createElement("td");
             _el.setAttribute("data-grid-y", 0);
@@ -61,10 +67,12 @@ class Grid {
             new_row.setAttribute("data-grid-y", row_idx+SPACER_ROWS);
             new_row.setAttribute("data-logical-y", row_idx);
             
+            /* Creating index columns */
             let spacer_cell = document.createElement("td");
             spacer_cell.setAttribute("data-grid-y", row_idx+SPACER_ROWS);
             spacer_cell.setAttribute("data-logical-y", row_idx);
             spacer_cell.setAttribute("data-grid-x", 0);
+            spacer_cell.setAttribute("data-index-cell", "");
             spacer_cell.textContent = row_idx;
             new_row.appendChild(spacer_cell);
     
@@ -85,7 +93,11 @@ class Grid {
         const all_cells = table.querySelectorAll("td");
         for (const cell of all_cells)
         {
-            cell.addEventListener("click", (e) => this.tableCellOnClick(e))
+            //cell.addEventListener("click", (e) => this.tableCellOnClick(e))
+            cell.addEventListener("mousedown", (e) => this.selection_manager.onTableCellMouseDown(e));
+            cell.addEventListener("mouseenter", (e) => this.selection_manager.onTableCellMouseEnter(e));
+            cell.addEventListener("mouseleave", (e) => this.selection_manager.onTableCellMouseLeave(e));
+            cell.addEventListener("mouseup", (e) => this.selection_manager.onTableCellMouseUp(e));
             cell.setAttribute("data-logical-state", "neutral");
         }
     }
@@ -141,4 +153,203 @@ class Grid {
 
         }
     }
+
+    tableSelectionChanged(e) {
+        const selection =  this.selection_manager.getCurrentSelection();
+        const cells = Array.from(this.table_element.querySelectorAll(`td`));
+        for (const cell of cells)
+        {
+            cell.setAttribute("data-logical-state", "neutral");
+        }
+        const selected_cells = cells.filter(cell => {
+            const x = parseInt(cell.getAttribute('data-logical-x'));
+            const y = parseInt(cell.getAttribute('data-logical-y'));
+            return (selection.logical_x_range[0] <= x && x <= selection.logical_x_range[1] &&
+                selection.logical_y_range[0] <= y && y <= selection.logical_y_range[1]
+                );
+        });
+        for (const cell of selected_cells) 
+        {
+            cell.setAttribute("data-logical-state", "selected");
+        }
+
+    }
+
+}
+
+/**
+ * Enum for selection type
+ * @readonly
+ * @enum {string}
+ */
+const selectionType = {
+    CELLS : "cells",
+    ROWS : "rows",
+    COLS : "cols"
+}
+
+/**
+ * Enum for cell type.
+ * @readonly
+ * @enum {string}
+ */
+const cellType = {
+    DATA : "data",
+    HEADER : "header",
+    INDEX : "index"
+}
+
+class SelectionManager {
+
+    selection_active = false;
+    table_element = null;
+
+    /**
+     * @type {selectionType|undefined}
+     */
+    selection_type = null;
+
+    selected_rows_start = null;
+    selceted_rows_end = null;
+
+    selected_columns_start = null;
+    selected_columns_end = null;
+
+    selected_cells_start_x = null;
+    selected_cells_start_y = null;
+    selected_cells_ends_x = null;
+    selected_cells_end_y = null;
+
+    selection_start_cell = null;
+
+    constructor(table_element) {
+        this.table_element = table_element;
+    }
+
+    deactivate() {
+        this.selection_active = false;
+        this.selection_type = null;
+        this.selection_start_cell = null;
+        this.selected_rows_start = null;
+        this.selceted_rows_end = null;
+    
+        this.selected_columns_start = null;
+        this.selected_columns_end = null;
+    
+        this.selected_cells_start_x = null;
+        this.selected_cells_start_y = null;
+        this.selected_cells_ends_x = null;
+        this.selected_cells_end_y = null;
+    }
+
+    onTableCellMouseDown(e) {
+        if (this.selection_active) {
+            this.deactivate();
+            return;
+        }
+        const cell_type = this.getCellType(e.target);
+        this.selection_active = true;
+        this.selection_start_cell = e.target;
+        if (cell_type == cellType.DATA) {
+            this.selection_type = selectionType.CELLS;
+            this.selected_cells_start_x = parseInt(e.target.getAttribute("data-logical-x"));
+            this.selected_cells_start_y = parseInt(e.target.getAttribute("data-logical-y"));
+            this.selected_cells_end_x =   parseInt(e.target.getAttribute("data-logical-x"));
+            this.selected_cells_end_y =   parseInt(e.target.getAttribute("data-logical-y"));
+
+        } else if (cell_type == cellType.INDEX) {
+            this.selection_type = selectionType.ROWS;
+            this.selected_rows_start = parseInt(e.target.getAttribute("data-logical-y"));
+            this.selected_rows_end =   parseInt(e.target.getAttribute("data-logical-y"));
+
+        } else if (cell_type == cellType.HEADER) {
+            this.selection_type = selectionType.COLS;
+            this.selected_columns_start = parseInt(e.target.getAttribute("data-logical-x"));
+            this.selected_columns_end =   parseInt(e.target.getAttribute("data-logical-x"));
+        }
+        this.table_element.dispatchEvent(new Event("tableselectionchanged"));
+    }
+
+    onTableCellMouseEnter(e) {
+        if (!this.selection_active) return;
+        const cell_type = this.getCellType(e.target);
+        if (this.selection_type == selectionType.CELLS) {
+            if (cell_type == cellType.DATA) {
+                this.selected_cells_end_x = parseInt(e.target.getAttribute("data-logical-x"));
+                this.selected_cells_end_y = parseInt(e.target.getAttribute("data-logical-y"));
+            } else if (cell_type == cellType.INDEX) {
+                this.selected_rows_end = parseInt(e.target.getAttribute("data-logical-y"));
+            } else if (cell_type == cellType.HEADER) {
+                this.selected_columns_end = parseInt(e.target.getAttribute("data-logical-x"));
+            }
+
+        } else if (this.selection_type == selectionType.ROWS) {
+            if (cell_type == cellType.DATA) {
+
+            } else if (cell_type == cellType.INDEX) {
+
+            } else if (cell_type == cellType.HEADER) {
+                
+            }
+        } else if (this.selection_type == selectionType.COLS) {
+            if (cell_type == cellType.DATA) {
+
+            } else if (cell_type == cellType.INDEX) {
+
+            } else if (cell_type == cellType.HEADER) {
+                
+            }
+        }
+        this.table_element.dispatchEvent(new Event("tableselectionchanged"));
+    }
+
+    onTableCellMouseLeave(e) {
+        if (!this.selection_active) return;
+        const cell_type = this.getCellType(e.target);
+
+    }
+
+    onTableCellMouseUp(e) {
+        if (!this.selection_active) return;
+        const cell_type = this.getCellType(e.target);
+        this.selection_active = false;
+    }
+
+    /**
+     * 
+     * @param {*} elem 
+     * @returns {cellType}
+     */
+    getCellType(elem) {
+        if (elem.hasAttribute("data-header-cell")) {
+            return cellType.HEADER;
+        } else if (elem.hasAttribute("data-index-cell")) {
+            return cellType.INDEX;
+        }
+        return cellType.DATA;
+    }
+
+    getCurrentSelection() {
+
+        if (this.selection_type == selectionType.CELLS) {
+            const x_range = this._getRange(this.selected_cells_start_x, this.selected_cells_end_x);
+            const y_range = this._getRange(this.selected_cells_start_y, this.selected_cells_end_y);
+            return {
+                selection_type : this.selection_type,
+                logical_x_range : x_range,
+                logical_y_range : y_range
+            }
+        } else if (this.selection_type == selectionType.ROWS) {
+
+        } else if (this.selection_type == selectionType.COLS) {
+
+        }
+    }
+
+    _getRange(a,b) {
+        if (a == b) return [a,b];
+        if (a > b) return [b,a];
+        return [a,b];
+    }
+
 }
