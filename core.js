@@ -161,13 +161,30 @@ class Grid {
         {
             cell.setAttribute("data-logical-state", "neutral");
         }
-        const selected_cells = cells.filter(cell => {
-            const x = parseInt(cell.getAttribute('data-logical-x'));
-            const y = parseInt(cell.getAttribute('data-logical-y'));
-            return (selection.logical_x_range[0] <= x && x <= selection.logical_x_range[1] &&
-                selection.logical_y_range[0] <= y && y <= selection.logical_y_range[1]
-                );
-        });
+        let selected_cells;
+        if (selection.selection_type == selectionType.CELLS) {
+            selected_cells = cells.filter(cell => {
+                const x = parseInt(cell.getAttribute('data-logical-x'));
+                const y = parseInt(cell.getAttribute('data-logical-y'));
+                return (selection.logical_x_range[0] <= x && x <= selection.logical_x_range[1] &&
+                    selection.logical_y_range[0] <= y && y <= selection.logical_y_range[1]
+                    );
+            });
+        } else if (selection.selection_type == selectionType.ROWS) {
+            selected_cells = cells.filter(cell => {
+                const y = parseInt(cell.getAttribute('data-logical-y'));
+                return (
+                    selection.logical_y_range[0] <= y && y <= selection.logical_y_range[1]
+                    );
+            });
+        } else if (selection.selection_type == selectionType.COLS) {
+            selected_cells = cells.filter(cell => {
+                const x = parseInt(cell.getAttribute('data-logical-x'));
+                return (selection.logical_x_range[0] <= x && x <= selection.logical_x_range[1]
+                    );
+            });
+        }
+
         for (const cell of selected_cells) 
         {
             cell.setAttribute("data-logical-state", "selected");
@@ -273,32 +290,21 @@ class SelectionManager {
     onTableCellMouseEnter(e) {
         if (!this.selection_active) return;
         const cell_type = this.getCellType(e.target);
+
         if (this.selection_type == selectionType.CELLS) {
             if (cell_type == cellType.DATA) {
                 this.selected_cells_end_x = parseInt(e.target.getAttribute("data-logical-x"));
                 this.selected_cells_end_y = parseInt(e.target.getAttribute("data-logical-y"));
             } else if (cell_type == cellType.INDEX) {
-                this.selected_rows_end = parseInt(e.target.getAttribute("data-logical-y"));
+                this.selected_cells_end_y = parseInt(e.target.getAttribute("data-logical-y"));
             } else if (cell_type == cellType.HEADER) {
-                this.selected_columns_end = parseInt(e.target.getAttribute("data-logical-x"));
+                this.selected_cells_end_x = parseInt(e.target.getAttribute("data-logical-x"));
             }
 
         } else if (this.selection_type == selectionType.ROWS) {
-            if (cell_type == cellType.DATA) {
-
-            } else if (cell_type == cellType.INDEX) {
-
-            } else if (cell_type == cellType.HEADER) {
-                
-            }
+            this.selected_rows_end = parseInt(e.target.getAttribute("data-logical-y"));
         } else if (this.selection_type == selectionType.COLS) {
-            if (cell_type == cellType.DATA) {
-
-            } else if (cell_type == cellType.INDEX) {
-
-            } else if (cell_type == cellType.HEADER) {
-                
-            }
+            this.selected_columns_end = parseInt(e.target.getAttribute("data-logical-x"));
         }
         this.table_element.dispatchEvent(new Event("tableselectionchanged"));
     }
@@ -340,9 +346,18 @@ class SelectionManager {
                 logical_y_range : y_range
             }
         } else if (this.selection_type == selectionType.ROWS) {
+            const y_range = this._getRange(this.selected_rows_start, this.selected_rows_end);
+            return {
+                selection_type : this.selection_type,
+                logical_y_range : y_range
+            };
 
         } else if (this.selection_type == selectionType.COLS) {
-
+            const x_range = this._getRange(this.selected_columns_start, this.selected_columns_end);
+            return {
+                selection_type : this.selection_type,
+                logical_x_range : x_range
+            };
         }
     }
 
