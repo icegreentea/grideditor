@@ -100,6 +100,9 @@ class Grid {
             cell.addEventListener("mouseup", (e) => this.selection_manager.onTableCellMouseUp(e));
             cell.setAttribute("data-logical-state", "neutral");
         }
+
+        table.setAttribute("data-logical-max-x", column_order.length);
+        table.setAttribute("data-logical-max-y", this.data.length);
     }
 
     set focusedCell(cell_element) {
@@ -218,7 +221,7 @@ const cellType = {
 
 class SelectionManager {
 
-    selection_active = false;
+    mousehold_active = false;
     table_element = null;
 
     /**
@@ -241,10 +244,11 @@ class SelectionManager {
 
     constructor(table_element) {
         this.table_element = table_element;
+        document.addEventListener("keydown", (e) => this.onKeyDown(e));
     }
 
     deactivate() {
-        this.selection_active = false;
+        this.mousehold_active = false;
         this.selection_type = null;
         this.selection_start_cell = null;
         this.selected_rows_start = null;
@@ -259,13 +263,102 @@ class SelectionManager {
         this.selected_cells_end_y = null;
     }
 
+    onKeyDown(e) {
+        if (this.selection_start_cell === null) {
+            return;
+        }
+        const max_x = parseInt(this.table_element.getAttribute("data-logical-max-x"));
+        const max_y = parseInt(this.table_element.getAttribute("data-logical-max-y"));
+
+        if (e.shiftKey) {
+            if (this.selection_type == selectionType.CELLS) {
+                const base_x = parseInt(this.selection_start_cell.getAttribute("data-logical-x"));
+                const base_y = parseInt(this.selection_start_cell.getAttribute("data-logical-y"));
+                let x_range = this._getRange(this.selected_cells_start_x, this.selected_cells_end_x);
+                let y_range = this._getRange(this.selected_cells_start_y, this.selected_cells_end_y);
+                if (e.keyCode == 37) {  // left-arrow
+                    if (x_range[0] == base_x) { // selection to right of start
+                        if (x_range[1] > 0) {
+                            x_range[1] = x_range[1] - 1;
+                        }
+                    } else if (x_range[1] == base_x) { // selection to left of start
+                        if (x_range[0] > 0) {
+                            x_range[0] = x_range[0] - 1;
+                        }
+                    }
+                } else if (e.keyCode == 39) { //right-arrow
+                    if (x_range[0] == base_x) { // selection to right of start
+                        if (x_range[1] < max_x - 1) {
+                            x_range[1] = x_range[1] + 1;
+                        }
+                    } else if (x_range[1] == base_x) { // selection to left of start
+                        if (x_range[0] < max_x - 1) {
+                            x_range[0] = x_range[0] + 1;
+                        }
+                    }
+                } else if (e.keyCode == 38) { // up-arrow
+                    if (y_range[0] == base_y) { // selection to below of start
+                        if (y_range[1] > 0) {
+                            y_range[1] = y_range[1] - 1;
+                        }
+                    } else if (y_range[1] == base_y) { // selection to above of start
+                        if (y_range[0] > 0) {
+                            y_range[0] = y_range[0] - 1;
+                        }
+                    }
+                } else if (e.keyCode == 40) { // down-arrow
+                    if (y_range[0] == base_y) { // selection to below of start
+                        if (y_range[1] < max_y - 1) {
+                            y_range[1] = y_range[1] + 1;
+                        }
+                    } else if (y_range[1] == base_y) { // selection to above of start
+                        if (y_range[0] < max_y - 1) {
+                            y_range[0] = y_range[0] + 1;
+                        }
+                    }
+                }
+                this.selected_cells_start_x = x_range[0];
+                this.selected_cells_end_x = x_range[1];
+                this.selected_cells_start_y = y_range[0];
+                this.selected_cells_end_y = y_range[1];
+                this.table_element.dispatchEvent(new Event("tableselectionchanged"));
+
+            } else if (this.selection_type == selectionType.ROWS) {
+
+            } else if (this.selection_type = selectionType.COLS) {
+
+            }
+
+        } else {
+            let x = parseInt(this.selection_start_cell.getAttribute("data-logical-x"));
+            let y = parseInt(this.selection_start_cell.getAttribute("data-logical-y"));
+            if (e.keyCode == 37) {  // left-arrow
+                if (x > 0) x = x-1;
+            } else if (e.keyCode == 39) { //right-arrow
+                if (x < max_x-1) x = x +1;
+            } else if (e.keyCode == 38) { // up-arrow
+                if (y > 0) y = y-1;
+            } else if (e.keyCode == 40) { // down-arrow
+                if (y < max_y-1) y = y+1;
+            }
+            this.selected_cells_start_x = this.selected_cells_end_x = x;
+            this.selected_cells_start_y = this.selected_cells_end_y = y;
+            this.selection_start_cell = getLogicalCell(this.table_element, x, y);
+            this.selection_type = selectionType.CELLS;
+            this.table_element.dispatchEvent(new Event("tableselectionchanged"));
+        }
+
+
+
+    }
+
     onTableCellMouseDown(e) {
-        if (this.selection_active) {
+        if (this.mousehold_active) {
             this.deactivate();
             return;
         }
         const cell_type = this.getCellType(e.target);
-        this.selection_active = true;
+        this.mousehold_active = true;
         this.selection_start_cell = e.target;
         if (cell_type == cellType.DATA) {
             this.selection_type = selectionType.CELLS;
@@ -288,7 +381,7 @@ class SelectionManager {
     }
 
     onTableCellMouseEnter(e) {
-        if (!this.selection_active) return;
+        if (!this.mousehold_active) return;
         const cell_type = this.getCellType(e.target);
 
         if (this.selection_type == selectionType.CELLS) {
@@ -310,15 +403,15 @@ class SelectionManager {
     }
 
     onTableCellMouseLeave(e) {
-        if (!this.selection_active) return;
+        if (!this.mousehold_active) return;
         const cell_type = this.getCellType(e.target);
 
     }
 
     onTableCellMouseUp(e) {
-        if (!this.selection_active) return;
+        if (!this.mousehold_active) return;
         const cell_type = this.getCellType(e.target);
-        this.selection_active = false;
+        this.mousehold_active = false;
     }
 
     /**
@@ -367,4 +460,8 @@ class SelectionManager {
         return [a,b];
     }
 
+}
+
+function getLogicalCell(table_element, logical_x, logical_y) {
+    return table_element.querySelector(`td[data-logical-x="${logical_x}"][data-logical-y="${logical_y}"]`);
 }
