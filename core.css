@@ -3,12 +3,16 @@
     padding-right: 2px;
     border: 1px black solid;
     box-sizing: border-box;
+    left : 0;
+    right : 0;
+    top : 0;
+    bottom : 0;
+    position: absolute;
     
 }
 
 .coresheet_content {
-    width: 100%;
-    height: 100%
+    overflow: scroll;
 }
 
 .coresheet {
