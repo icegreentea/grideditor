@@ -266,53 +266,37 @@ class SelectionManager {
           // left-arrow
           if (x_range[0] == base_x) {
             // selection to right of start
-            if (x_range[1] > 0) {
-              x_range[1] = x_range[1] - 1;
-            }
+            x_range[1] = clampedDecrement(x_range[1], 0);
           } else if (x_range[1] == base_x) {
             // selection to left of start
-            if (x_range[0] > 0) {
-              x_range[0] = x_range[0] - 1;
-            }
+            x_range[0] = clampedDecrement(x_range[0], 0);
           }
         } else if (e.keyCode == 39) {
           //right-arrow
           if (x_range[0] == base_x) {
             // selection to right of start
-            if (x_range[1] < max_x - 1) {
-              x_range[1] = x_range[1] + 1;
-            }
+            x_range[1] = clampedIncrement(x_range[1], max_x - 1);
           } else if (x_range[1] == base_x) {
             // selection to left of start
-            if (x_range[0] < max_x - 1) {
-              x_range[0] = x_range[0] + 1;
-            }
+            x_range[0] = clampedIncrement(x_range[0], max_x - 1);
           }
         } else if (e.keyCode == 38) {
           // up-arrow
           if (y_range[0] == base_y) {
             // selection to below of start
-            if (y_range[1] > 0) {
-              y_range[1] = y_range[1] - 1;
-            }
+            y_range[1] = clampedDecrement(y_range[1], 0);
           } else if (y_range[1] == base_y) {
             // selection to above of start
-            if (y_range[0] > 0) {
-              y_range[0] = y_range[0] - 1;
-            }
+            y_range[0] = clampedDecrement(y_range[0], 0);
           }
         } else if (e.keyCode == 40) {
           // down-arrow
           if (y_range[0] == base_y) {
             // selection to below of start
-            if (y_range[1] < max_y - 1) {
-              y_range[1] = y_range[1] + 1;
-            }
+            y_range[1] = clampedIncrement(y_range[1], max_y - 1);
           } else if (y_range[1] == base_y) {
             // selection to above of start
-            if (y_range[0] < max_y - 1) {
-              y_range[0] = y_range[0] + 1;
-            }
+            y_range[0] = clampedIncrement(y_range[0], max - y - 1);
           }
         }
         this.selected_cells_start_x = x_range[0];
@@ -331,27 +315,19 @@ class SelectionManager {
           // up-arrow
           if (y_range[0] == base_y) {
             // selection to below of start
-            if (y_range[1] > 0) {
-              y_range[1] = y_range[1] - 1;
-            }
+            y_range[1] = clampedDecrement(y_range[1], 0);
           } else if (y_range[1] == base_y) {
             // selection to above of start
-            if (y_range[0] > 0) {
-              y_range[0] = y_range[0] - 1;
-            }
+            y_range[0] = clampedDecrement(y_range[0], 0);
           }
         } else if (e.keyCode == 40) {
           // down-arrow
           if (y_range[0] == base_y) {
             // selection to below of start
-            if (y_range[1] < max_y - 1) {
-              y_range[1] = y_range[1] + 1;
-            }
+            y_range[1] = clampedIncrement(y_range[1], max_y - 1);
           } else if (y_range[1] == base_y) {
             // selection to above of start
-            if (y_range[0] < max_y - 1) {
-              y_range[0] = y_range[0] + 1;
-            }
+            y_range[0] = clampedIncrement(y_range[0], max_y - 1);
           }
         }
         this.selected_rows_start = y_range[0];
@@ -364,27 +340,19 @@ class SelectionManager {
           // left-arrow
           if (x_range[0] == base_x) {
             // selection to right of start
-            if (x_range[1] > 0) {
-              x_range[1] = x_range[1] - 1;
-            }
+            x_range[1] = clampedDecrement(x_range[1], 0);
           } else if (x_range[1] == base_x) {
             // selection to left of start
-            if (x_range[0] > 0) {
-              x_range[0] = x_range[0] - 1;
-            }
+            x_range[0] = clampedDecrement(x_range[0], 0);
           }
         } else if (e.keyCode == 39) {
           //right-arrow
           if (x_range[0] == base_x) {
             // selection to right of start
-            if (x_range[1] < max_x - 1) {
-              x_range[1] = x_range[1] + 1;
-            }
+            x_range[1] = clampedIncrement(x_range[1], max_x - 1);
           } else if (x_range[1] == base_x) {
             // selection to left of start
-            if (x_range[0] < max_x - 1) {
-              x_range[0] = x_range[0] + 1;
-            }
+            x_range[0] = clampedIncrement(x_range[0], max_x - 1);
           }
         } else if (e.keyCode == 38) {
           // up-arrow
@@ -526,4 +494,14 @@ function getLogicalCell(table_element, logical_x, logical_y) {
   return table_element.querySelector(
     `td[data-logical-x="${logical_x}"][data-logical-y="${logical_y}"]`
   );
+}
+
+function clampedDecrement(x, limit) {
+  if (x > limit) return x - 1;
+  return x;
+}
+
+function clampedIncrement(x, limit) {
+  if (x < limit) return x + 1;
+  return x;
 }
