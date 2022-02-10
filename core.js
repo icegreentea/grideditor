@@ -209,6 +209,7 @@ const cellType = {
 class SelectionManager {
   mousehold_active = false;
   table_element = null;
+  shift_active = false;
 
   /**
    * @type {selectionType|undefined}
@@ -231,6 +232,7 @@ class SelectionManager {
   constructor(table_element) {
     this.table_element = table_element;
     document.addEventListener("keydown", (e) => this.onKeyDown(e));
+    document.addEventListener("keyup", (e) => this.onKeyUp(e));
   }
 
   deactivate() {
@@ -249,9 +251,19 @@ class SelectionManager {
     this.selected_cells_end_y = null;
   }
 
+  onKeyUp(e) {
+    if (e.keyCode == 16) this.shiftKey = false;
+  }
+
   onKeyDown(e) {
     if (this.selection_start_cell === null) {
       return;
+    }
+    if (e.keyCode == 16) {
+      this.shift_active = true;
+    }
+    if (!e.shiftKey) {
+      this.shift_active = false;
     }
     const max_x = parseInt(this.table_element.getAttribute("data-logical-max-x"));
     const max_y = parseInt(this.table_element.getAttribute("data-logical-max-y"));
