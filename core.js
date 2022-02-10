@@ -157,8 +157,7 @@ class Grid {
     let selected_cells;
     if (selection.selection_type == selectionType.CELLS) {
       selected_cells = cells.filter((cell) => {
-        const x = parseInt(cell.getAttribute("data-logical-x"));
-        const y = parseInt(cell.getAttribute("data-logical-y"));
+        const [x, y] = getLogicalCoord(cell);
         return (
           selection.logical_x_range[0] <= x &&
           x <= selection.logical_x_range[1] &&
@@ -168,12 +167,12 @@ class Grid {
       });
     } else if (selection.selection_type == selectionType.ROWS) {
       selected_cells = cells.filter((cell) => {
-        const y = parseInt(cell.getAttribute("data-logical-y"));
+        const y = getLogicalY(cell);
         return selection.logical_y_range[0] <= y && y <= selection.logical_y_range[1];
       });
     } else if (selection.selection_type == selectionType.COLS) {
       selected_cells = cells.filter((cell) => {
-        const x = parseInt(cell.getAttribute("data-logical-x"));
+        const x = getLogicalX(cell);
         return selection.logical_x_range[0] <= x && x <= selection.logical_x_range[1];
       });
     }
@@ -270,8 +269,7 @@ class SelectionManager {
 
     if (e.shiftKey) {
       if (this.selection_type == selectionType.CELLS) {
-        const base_x = parseInt(this.selection_start_cell.getAttribute("data-logical-x"));
-        const base_y = parseInt(this.selection_start_cell.getAttribute("data-logical-y"));
+        const [base_x, base_y] = getLogicalCoord(this.selection_start_cell);
         let x_range = this._getRange(this.selected_cells_start_x, this.selected_cells_end_x);
         let y_range = this._getRange(this.selected_cells_start_y, this.selected_cells_end_y);
         if (e.keyCode == 37) {
@@ -308,16 +306,14 @@ class SelectionManager {
             y_range[1] = clampedIncrement(y_range[1], max_y - 1);
           } else if (y_range[1] == base_y) {
             // selection to above of start
-            y_range[0] = clampedIncrement(y_range[0], max - y - 1);
+            y_range[0] = clampedIncrement(y_range[0], max_y - 1);
           }
         }
-        this.selected_cells_start_x = x_range[0];
-        this.selected_cells_end_x = x_range[1];
-        this.selected_cells_start_y = y_range[0];
-        this.selected_cells_end_y = y_range[1];
+        [this.selected_cells_start_x, this.selected_cells_end_x] = x_range;
+        [this.selected_cells_start_y, this.selected_cells_end_y] = y_range;
         this.table_element.dispatchEvent(new Event("tableselectionchanged"));
       } else if (this.selection_type == selectionType.ROWS) {
-        const base_y = parseInt(this.selection_start_cell.getAttribute("data-logical-y"));
+        const base_y = getLogicalY(this.selection_start_cell);
         let y_range = this._getRange(this.selected_rows_start, this.selected_rows_end);
         if (e.keyCode == 37) {
           // left-arrow
@@ -342,11 +338,10 @@ class SelectionManager {
             y_range[0] = clampedIncrement(y_range[0], max_y - 1);
           }
         }
-        this.selected_rows_start = y_range[0];
-        this.selected_rows_end = y_range[1];
+        [this.selected_rows_start, this.selected_rows_end] = y_range;
         this.table_element.dispatchEvent(new Event("tableselectionchanged"));
       } else if ((this.selection_type = selectionType.COLS)) {
-        const base_x = parseInt(this.selection_start_cell.getAttribute("data-logical-x"));
+        const base_x = getLogicalX(this.selection_start_cell);
         let x_range = this._getRange(this.selected_columns_start, this.selected_columns_end);
         if (e.keyCode == 37) {
           // left-arrow
@@ -371,13 +366,11 @@ class SelectionManager {
         } else if (e.keyCode == 40) {
           // down-arrow
         }
-        this.selected_columns_start = x_range[0];
-        this.selected_columns_end = x_range[1];
+        [this.selected_columns_start, this.selected_columns_end] = x_range;
         this.table_element.dispatchEvent(new Event("tableselectionchanged"));
       }
     } else {
-      let x = parseInt(this.selection_start_cell.getAttribute("data-logical-x"));
-      let y = parseInt(this.selection_start_cell.getAttribute("data-logical-y"));
+      let [x, y] = getLogicalCoord(this.selection_start_cell);
       if (e.keyCode == 37) {
         // left-arrow
         if (x > 0) x = x - 1;
@@ -409,18 +402,17 @@ class SelectionManager {
     this.selection_start_cell = e.target;
     if (cell_type == cellType.DATA) {
       this.selection_type = selectionType.CELLS;
-      this.selected_cells_start_x = parseInt(e.target.getAttribute("data-logical-x"));
-      this.selected_cells_start_y = parseInt(e.target.getAttribute("data-logical-y"));
-      this.selected_cells_end_x = parseInt(e.target.getAttribute("data-logical-x"));
-      this.selected_cells_end_y = parseInt(e.target.getAttribute("data-logical-y"));
+      [this.selected_cells_start_x, this.selected_cells_start_y] = getLogicalCoord(e.target);
+      [this.selected_cells_end_x, this.selected_cells_end_y] = [
+        this.selected_cells_start_x,
+        this.selected_cells_start_y,
+      ];
     } else if (cell_type == cellType.INDEX) {
       this.selection_type = selectionType.ROWS;
-      this.selected_rows_start = parseInt(e.target.getAttribute("data-logical-y"));
-      this.selected_rows_end = parseInt(e.target.getAttribute("data-logical-y"));
+      this.selected_rows_start = this.selected_rows_end = getLogicalY(e.target);
     } else if (cell_type == cellType.HEADER) {
       this.selection_type = selectionType.COLS;
-      this.selected_columns_start = parseInt(e.target.getAttribute("data-logical-x"));
-      this.selected_columns_end = parseInt(e.target.getAttribute("data-logical-x"));
+      this.selected_columns_start = this.selected_columns_end = getLogicalX(e.target);
     }
     this.table_element.dispatchEvent(new Event("tableselectionchanged"));
   }
@@ -431,17 +423,16 @@ class SelectionManager {
 
     if (this.selection_type == selectionType.CELLS) {
       if (cell_type == cellType.DATA) {
-        this.selected_cells_end_x = parseInt(e.target.getAttribute("data-logical-x"));
-        this.selected_cells_end_y = parseInt(e.target.getAttribute("data-logical-y"));
+        [this.selected_cells_end_x, this.selected_cells_end_y] = getLogicalCoord(e.target);
       } else if (cell_type == cellType.INDEX) {
-        this.selected_cells_end_y = parseInt(e.target.getAttribute("data-logical-y"));
+        this.selected_cells_end_y = getLogicalY(e.target);
       } else if (cell_type == cellType.HEADER) {
-        this.selected_cells_end_x = parseInt(e.target.getAttribute("data-logical-x"));
+        this.selected_cells_end_x = getLogicalX(e.target);
       }
     } else if (this.selection_type == selectionType.ROWS) {
-      this.selected_rows_end = parseInt(e.target.getAttribute("data-logical-y"));
+      this.selected_rows_end = getLogicalY(e.target);
     } else if (this.selection_type == selectionType.COLS) {
-      this.selected_columns_end = parseInt(e.target.getAttribute("data-logical-x"));
+      this.selected_columns_end = getLogicalX(e.target);
     }
     this.table_element.dispatchEvent(new Event("tableselectionchanged"));
   }
@@ -516,4 +507,19 @@ function clampedDecrement(x, limit) {
 function clampedIncrement(x, limit) {
   if (x < limit) return x + 1;
   return x;
+}
+
+function getLogicalX(element) {
+  return parseInt(element.getAttribute("data-logical-x"));
+}
+
+function getLogicalY(element) {
+  return parseInt(element.getAttribute("data-logical-y"));
+}
+
+function getLogicalCoord(element) {
+  return [
+    parseInt(element.getAttribute("data-logical-x")),
+    parseInt(element.getAttribute("data-logical-y")),
+  ];
 }
