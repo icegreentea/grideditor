@@ -417,22 +417,36 @@ class SelectionManager {
       return;
     }
     const cell_type = this.getCellType(e.target);
-    this.mousehold_active = true;
-    this.selection_start_cell = e.target;
-    if (cell_type == cellType.DATA) {
-      this.selection_type = selectionType.CELLS;
-      [this.selected_cells_start_x, this.selected_cells_start_y] = getLogicalCoord(e.target);
-      [this.selected_cells_end_x, this.selected_cells_end_y] = [
-        this.selected_cells_start_x,
-        this.selected_cells_start_y,
-      ];
-    } else if (cell_type == cellType.INDEX) {
-      this.selection_type = selectionType.ROWS;
-      this.selected_rows_start = this.selected_rows_end = getLogicalY(e.target);
-    } else if (cell_type == cellType.HEADER) {
-      this.selection_type = selectionType.COLS;
-      this.selected_columns_start = this.selected_columns_end = getLogicalX(e.target);
+    if (this.shift_active) {
+      if (cell_type == cellType.DATA) {
+      } else if (cell_type == cellType.INDEX) {
+      } else if (cell_type == cellType.HEADER) {
+      }
+    } else {
+      this.mousehold_active = true;
+      if (cell_type == cellType.DATA) {
+        this.selection_type = selectionType.CELLS;
+        this.selection_start_cell = e.target;
+        [this.selected_cells_start_x, this.selected_cells_start_y] = getLogicalCoord(e.target);
+        [this.selected_cells_end_x, this.selected_cells_end_y] = [
+          this.selected_cells_start_x,
+          this.selected_cells_start_y,
+        ];
+      } else if (cell_type == cellType.INDEX) {
+        this.selection_type = selectionType.ROWS;
+        this.selected_rows_start = this.selected_rows_end = getLogicalY(e.target);
+        this.selection_start_cell = getLogicalCell(this.table_element, 0, this.selected_rows_start);
+      } else if (cell_type == cellType.HEADER) {
+        this.selection_type = selectionType.COLS;
+        this.selected_columns_start = this.selected_columns_end = getLogicalX(e.target);
+        this.selection_start_cell = getLogicalCell(
+          this.table_element,
+          this.selected_columns_start,
+          0
+        );
+      }
     }
+
     this.table_element.dispatchEvent(new Event("tableselectionchanged"));
   }
 
@@ -542,5 +556,3 @@ function getLogicalCoord(element) {
     parseInt(element.getAttribute("data-logical-y")),
   ];
 }
-
-function touch() {}
