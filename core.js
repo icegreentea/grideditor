@@ -264,112 +264,19 @@ class SelectionManager {
     if (!e.shiftKey) {
       this.shift_active = false;
     }
-    const max_x = parseInt(this.table_element.getAttribute("data-logical-max-x"));
-    const max_y = parseInt(this.table_element.getAttribute("data-logical-max-y"));
 
     if (e.shiftKey) {
       if (this.selection_type == selectionType.CELLS) {
-        const [base_x, base_y] = getLogicalCoord(this.selection_start_cell);
-        let x_range = this._getRange(this.selected_cells_start_x, this.selected_cells_end_x);
-        let y_range = this._getRange(this.selected_cells_start_y, this.selected_cells_end_y);
-        if (e.keyCode == 37) {
-          // left-arrow
-          if (x_range[0] == base_x) {
-            // selection to right of start
-            x_range[1] = clampedDecrement(x_range[1], 0);
-          } else if (x_range[1] == base_x) {
-            // selection to left of start
-            x_range[0] = clampedDecrement(x_range[0], 0);
-          }
-        } else if (e.keyCode == 39) {
-          //right-arrow
-          if (x_range[0] == base_x) {
-            // selection to right of start
-            x_range[1] = clampedIncrement(x_range[1], max_x - 1);
-          } else if (x_range[1] == base_x) {
-            // selection to left of start
-            x_range[0] = clampedIncrement(x_range[0], max_x - 1);
-          }
-        } else if (e.keyCode == 38) {
-          // up-arrow
-          if (y_range[0] == base_y) {
-            // selection to below of start
-            y_range[1] = clampedDecrement(y_range[1], 0);
-          } else if (y_range[1] == base_y) {
-            // selection to above of start
-            y_range[0] = clampedDecrement(y_range[0], 0);
-          }
-        } else if (e.keyCode == 40) {
-          // down-arrow
-          if (y_range[0] == base_y) {
-            // selection to below of start
-            y_range[1] = clampedIncrement(y_range[1], max_y - 1);
-          } else if (y_range[1] == base_y) {
-            // selection to above of start
-            y_range[0] = clampedIncrement(y_range[0], max_y - 1);
-          }
-        }
-        [this.selected_cells_start_x, this.selected_cells_end_x] = x_range;
-        [this.selected_cells_start_y, this.selected_cells_end_y] = y_range;
-        this.table_element.dispatchEvent(new Event("tableselectionchanged"));
+        this._onKeyDown_Shift_Cells(e);
       } else if (this.selection_type == selectionType.ROWS) {
-        const base_y = getLogicalY(this.selection_start_cell);
-        let y_range = this._getRange(this.selected_rows_start, this.selected_rows_end);
-        if (e.keyCode == 37) {
-          // left-arrow
-        } else if (e.keyCode == 39) {
-          //right-arrow
-        } else if (e.keyCode == 38) {
-          // up-arrow
-          if (y_range[0] == base_y) {
-            // selection to below of start
-            y_range[1] = clampedDecrement(y_range[1], 0);
-          } else if (y_range[1] == base_y) {
-            // selection to above of start
-            y_range[0] = clampedDecrement(y_range[0], 0);
-          }
-        } else if (e.keyCode == 40) {
-          // down-arrow
-          if (y_range[0] == base_y) {
-            // selection to below of start
-            y_range[1] = clampedIncrement(y_range[1], max_y - 1);
-          } else if (y_range[1] == base_y) {
-            // selection to above of start
-            y_range[0] = clampedIncrement(y_range[0], max_y - 1);
-          }
-        }
-        [this.selected_rows_start, this.selected_rows_end] = y_range;
-        this.table_element.dispatchEvent(new Event("tableselectionchanged"));
+        this._onKeyDown_Shift_Rows(e);
       } else if ((this.selection_type = selectionType.COLS)) {
-        const base_x = getLogicalX(this.selection_start_cell);
-        let x_range = this._getRange(this.selected_columns_start, this.selected_columns_end);
-        if (e.keyCode == 37) {
-          // left-arrow
-          if (x_range[0] == base_x) {
-            // selection to right of start
-            x_range[1] = clampedDecrement(x_range[1], 0);
-          } else if (x_range[1] == base_x) {
-            // selection to left of start
-            x_range[0] = clampedDecrement(x_range[0], 0);
-          }
-        } else if (e.keyCode == 39) {
-          //right-arrow
-          if (x_range[0] == base_x) {
-            // selection to right of start
-            x_range[1] = clampedIncrement(x_range[1], max_x - 1);
-          } else if (x_range[1] == base_x) {
-            // selection to left of start
-            x_range[0] = clampedIncrement(x_range[0], max_x - 1);
-          }
-        } else if (e.keyCode == 38) {
-          // up-arrow
-        } else if (e.keyCode == 40) {
-          // down-arrow
-        }
-        [this.selected_columns_start, this.selected_columns_end] = x_range;
-        this.table_element.dispatchEvent(new Event("tableselectionchanged"));
+        this._onKeyDown_Shift_Columns(e);
       }
     } else {
+      const max_x = parseInt(this.table_element.getAttribute("data-logical-max-x"));
+      const max_y = parseInt(this.table_element.getAttribute("data-logical-max-y"));
+
       let [x, y] = getLogicalCoord(this.selection_start_cell);
       if (e.keyCode == 37) {
         // left-arrow
@@ -390,6 +297,118 @@ class SelectionManager {
       this.selection_type = selectionType.CELLS;
       this.table_element.dispatchEvent(new Event("tableselectionchanged"));
     }
+  }
+
+  _onKeyDown_Shift_Cells(e) {
+    const max_x = parseInt(this.table_element.getAttribute("data-logical-max-x"));
+    const max_y = parseInt(this.table_element.getAttribute("data-logical-max-y"));
+    const [base_x, base_y] = getLogicalCoord(this.selection_start_cell);
+    let x_range = this._getRange(this.selected_cells_start_x, this.selected_cells_end_x);
+    let y_range = this._getRange(this.selected_cells_start_y, this.selected_cells_end_y);
+    if (e.keyCode == 37) {
+      // left-arrow
+      if (x_range[0] == base_x) {
+        // selection to right of start
+        x_range[1] = clampedDecrement(x_range[1], 0);
+      } else if (x_range[1] == base_x) {
+        // selection to left of start
+        x_range[0] = clampedDecrement(x_range[0], 0);
+      }
+    } else if (e.keyCode == 39) {
+      //right-arrow
+      if (x_range[0] == base_x) {
+        // selection to right of start
+        x_range[1] = clampedIncrement(x_range[1], max_x - 1);
+      } else if (x_range[1] == base_x) {
+        // selection to left of start
+        x_range[0] = clampedIncrement(x_range[0], max_x - 1);
+      }
+    } else if (e.keyCode == 38) {
+      // up-arrow
+      if (y_range[0] == base_y) {
+        // selection to below of start
+        y_range[1] = clampedDecrement(y_range[1], 0);
+      } else if (y_range[1] == base_y) {
+        // selection to above of start
+        y_range[0] = clampedDecrement(y_range[0], 0);
+      }
+    } else if (e.keyCode == 40) {
+      // down-arrow
+      if (y_range[0] == base_y) {
+        // selection to below of start
+        y_range[1] = clampedIncrement(y_range[1], max_y - 1);
+      } else if (y_range[1] == base_y) {
+        // selection to above of start
+        y_range[0] = clampedIncrement(y_range[0], max_y - 1);
+      }
+    }
+    [this.selected_cells_start_x, this.selected_cells_end_x] = x_range;
+    [this.selected_cells_start_y, this.selected_cells_end_y] = y_range;
+    this.table_element.dispatchEvent(new Event("tableselectionchanged"));
+  }
+
+  _onKeyDown_Shift_Rows(e) {
+    const max_x = parseInt(this.table_element.getAttribute("data-logical-max-x"));
+    const max_y = parseInt(this.table_element.getAttribute("data-logical-max-y"));
+    const base_y = getLogicalY(this.selection_start_cell);
+    let y_range = this._getRange(this.selected_rows_start, this.selected_rows_end);
+    if (e.keyCode == 37) {
+      // left-arrow
+    } else if (e.keyCode == 39) {
+      //right-arrow
+    } else if (e.keyCode == 38) {
+      // up-arrow
+      if (y_range[0] == base_y) {
+        // selection to below of start
+        y_range[1] = clampedDecrement(y_range[1], 0);
+      } else if (y_range[1] == base_y) {
+        // selection to above of start
+        y_range[0] = clampedDecrement(y_range[0], 0);
+      }
+    } else if (e.keyCode == 40) {
+      // down-arrow
+      if (y_range[0] == base_y) {
+        // selection to below of start
+        y_range[1] = clampedIncrement(y_range[1], max_y - 1);
+      } else if (y_range[1] == base_y) {
+        // selection to above of start
+        y_range[0] = clampedIncrement(y_range[0], max_y - 1);
+      }
+    }
+    [this.selected_rows_start, this.selected_rows_end] = y_range;
+    this.table_element.dispatchEvent(new Event("tableselectionchanged"));
+  }
+
+  _onKeyDown_Shift_Columns(e) {
+    const max_x = parseInt(this.table_element.getAttribute("data-logical-max-x"));
+    const max_y = parseInt(this.table_element.getAttribute("data-logical-max-y"));
+    const base_x = getLogicalX(this.selection_start_cell);
+    let x_range = this._getRange(this.selected_columns_start, this.selected_columns_end);
+    if (e.keyCode == 37) {
+      // left-arrow
+      if (x_range[0] == base_x) {
+        // selection to right of start
+        x_range[1] = clampedDecrement(x_range[1], 0);
+      } else if (x_range[1] == base_x) {
+        // selection to left of start
+        x_range[0] = clampedDecrement(x_range[0], 0);
+      }
+    } else if (e.keyCode == 39) {
+      //right-arrow
+      if (x_range[0] == base_x) {
+        // selection to right of start
+        x_range[1] = clampedIncrement(x_range[1], max_x - 1);
+      } else if (x_range[1] == base_x) {
+        // selection to left of start
+        x_range[0] = clampedIncrement(x_range[0], max_x - 1);
+      }
+    } else if (e.keyCode == 38) {
+      // up-arrow
+    } else if (e.keyCode == 40) {
+      // down-arrow
+    }
+    [this.selected_columns_start, this.selected_columns_end] = x_range;
+    this.table_element.dispatchEvent(new Event("tableselectionchanged"));
   }
 
   onTableCellMouseDown(e) {
