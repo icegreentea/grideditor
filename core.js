@@ -542,3 +542,5 @@ function getLogicalCoord(element) {
     parseInt(element.getAttribute("data-logical-y")),
   ];
 }
+
+function touch() {}
