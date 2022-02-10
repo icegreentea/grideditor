@@ -321,7 +321,79 @@ class SelectionManager {
         this.selected_cells_end_y = y_range[1];
         this.table_element.dispatchEvent(new Event("tableselectionchanged"));
       } else if (this.selection_type == selectionType.ROWS) {
+        const base_y = parseInt(this.selection_start_cell.getAttribute("data-logical-y"));
+        let y_range = this._getRange(this.selected_rows_start, this.selected_rows_end);
+        if (e.keyCode == 37) {
+          // left-arrow
+        } else if (e.keyCode == 39) {
+          //right-arrow
+        } else if (e.keyCode == 38) {
+          // up-arrow
+          if (y_range[0] == base_y) {
+            // selection to below of start
+            if (y_range[1] > 0) {
+              y_range[1] = y_range[1] - 1;
+            }
+          } else if (y_range[1] == base_y) {
+            // selection to above of start
+            if (y_range[0] > 0) {
+              y_range[0] = y_range[0] - 1;
+            }
+          }
+        } else if (e.keyCode == 40) {
+          // down-arrow
+          if (y_range[0] == base_y) {
+            // selection to below of start
+            if (y_range[1] < max_y - 1) {
+              y_range[1] = y_range[1] + 1;
+            }
+          } else if (y_range[1] == base_y) {
+            // selection to above of start
+            if (y_range[0] < max_y - 1) {
+              y_range[0] = y_range[0] + 1;
+            }
+          }
+        }
+        this.selected_rows_start = y_range[0];
+        this.selected_rows_end = y_range[1];
+        this.table_element.dispatchEvent(new Event("tableselectionchanged"));
       } else if ((this.selection_type = selectionType.COLS)) {
+        const base_x = parseInt(this.selection_start_cell.getAttribute("data-logical-x"));
+        let x_range = this._getRange(this.selected_columns_start, this.selected_columns_end);
+        if (e.keyCode == 37) {
+          // left-arrow
+          if (x_range[0] == base_x) {
+            // selection to right of start
+            if (x_range[1] > 0) {
+              x_range[1] = x_range[1] - 1;
+            }
+          } else if (x_range[1] == base_x) {
+            // selection to left of start
+            if (x_range[0] > 0) {
+              x_range[0] = x_range[0] - 1;
+            }
+          }
+        } else if (e.keyCode == 39) {
+          //right-arrow
+          if (x_range[0] == base_x) {
+            // selection to right of start
+            if (x_range[1] < max_x - 1) {
+              x_range[1] = x_range[1] + 1;
+            }
+          } else if (x_range[1] == base_x) {
+            // selection to left of start
+            if (x_range[0] < max_x - 1) {
+              x_range[0] = x_range[0] + 1;
+            }
+          }
+        } else if (e.keyCode == 38) {
+          // up-arrow
+        } else if (e.keyCode == 40) {
+          // down-arrow
+        }
+        this.selected_columns_start = x_range[0];
+        this.selected_columns_end = x_range[1];
+        this.table_element.dispatchEvent(new Event("tableselectionchanged"));
       }
     } else {
       let x = parseInt(this.selection_start_cell.getAttribute("data-logical-x"));
