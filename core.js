@@ -29,12 +29,16 @@ class Grid {
     this.table_element = table;
     inner_el.appendChild(table);
 
+    let colgroup = document.createElement("colgroup");
+    table.appendChild(colgroup);
+
     let thead = document.createElement("thead");
     table.appendChild(thead);
 
     let header_row = document.createElement("tr");
     header_row.setAttribute("data-grid-y", 0);
     thead.appendChild(header_row);
+    colgroup.appendChild(document.createElement("col"));
 
     let spacer_el = document.createElement("td");
     spacer_el.setAttribute("data-grid-y", 0);
@@ -56,6 +60,10 @@ class Grid {
       _el.textContent = header_elem["name"];
       header_row.appendChild(_el);
       column_order.push(header_elem["name"]);
+      let col = document.createElement("col");
+      col.style.width = "100px";
+      //col.setAttribute("width", 100);
+      colgroup.appendChild(col);
     }
 
     let body = document.createElement("tbody");
@@ -232,6 +240,7 @@ class SelectionManager {
     this.table_element = table_element;
     document.addEventListener("keydown", (e) => this.onKeyDown(e));
     document.addEventListener("keyup", (e) => this.onKeyUp(e));
+    document.addEventListener("mousemove", (e) => this.onMouseMove(e));
   }
 
   deactivate() {
@@ -448,6 +457,46 @@ class SelectionManager {
     }
 
     this.table_element.dispatchEvent(new Event("tableselectionchanged"));
+  }
+
+  getVisibleCells() {
+    const cells = this.table_element.querySelectorAll("td");
+    const bottom_bound = window.innerHeight || document.documentElement.clientHeight;
+    const right_bound = window.innerWidth || document.documentElement.clientWidth;
+  }
+
+  onMouseMove(e) {
+    if (!this.mousehold_active) return;
+    const { top, left, right, bottom } = this.table_element.getBoundingClientRect();
+    const { clientX, clientY } = e;
+
+    if (!(clientX < left || clientX > right || clientY < top || clientY > bottom)) {
+      // mouse is within table - we don't do anything here
+      return;
+    }
+    if (clientX > right) {
+      // need to scroll right
+      if (clientX - right < 50) {
+        // slow
+      } else {
+        // fast scroll
+      }
+    }
+    if (clientY > bottom) {
+      // need to scroll down
+      if (clientY - bottom < 50) {
+        // slow
+      } else {
+        // fast scroll
+      }
+    }
+
+    if (this.selection_type == selectionType.CELLS) {
+    } else if (this.selection_type == selectionType.ROWS) {
+    } else if (this.selection_type == selectionType.COLS) {
+    }
+
+    //console.log(clientX, clientY);
   }
 
   onTableCellMouseEnter(e) {
