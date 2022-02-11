@@ -8,10 +8,12 @@
     top : 0;
     bottom : 0;
     position: absolute;
+    overflow: hidden;
     
 }
 
 .coresheet_content {
+    /* width: 100%; */
     overflow: scroll;
 }
 
@@ -28,6 +30,8 @@
     border-right: 1px solid #ccc;
     border-bottom: 1px solid #ccc;
     user-select: none;
+
+    width: max-content;
 
 }
 
