@@ -15,6 +15,7 @@
 .coresheet_content {
     /* width: 100%; */
     overflow: scroll;
+    height: 100%;
 }
 
 .coresheet {
@@ -35,6 +36,20 @@
 
 }
 
+.coresheet > tbody > tr > td:first-child {
+    position: sticky;
+    left: 0;
+
+    border-top: 1px solid #ccc;
+    border-left: 1px solid #ccc;
+    border-right: 1px solid #ccc;
+    border-bottom: 1px solid transparent;
+    background-color: #f3f3f3;
+    padding: 2px;
+    z-index: 999;
+
+}
+
 .coresheet > thead > tr > td {
     border-top: 1px solid #ccc;
     border-left: 1px solid #ccc;
@@ -49,6 +64,7 @@
     position: -webkit-sticky;
     position: sticky;
     top: 0;
+    z-index: 1000;
 }
 
 .coresheet > tbody > tr > td
