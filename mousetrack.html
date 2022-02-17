@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+    
+    <head>
+        <meta charset="utf-8">
+        <link rel="stylesheet"  href="core.css">
+    </head>
+    <body>
+        <div id="target" style="width: 500px; height: 300px; background-color: red;">
+            <table>
+                <tr>
+                    <td>123</td>
+                    <td>456</td>
+                </tr>
+            </table>
+        </div>
+        <script>
+            console.log(document.getElementById("target").getBoundingClientRect())
+            //document.addEventListener("mousedown", (e) => console.log(e));
+            document.addEventListener("mousemove", (e) => console.log(e));
+        </script>
+    </body>
+
+</html>

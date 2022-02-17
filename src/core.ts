@@ -1,11 +1,26 @@
+type HeaderDefinition = {
+  name: string;
+};
+
+interface Element {
+  setAttribute(name: string, value: boolean): void;
+  setAttribute(name: string, value: number): void;
+}
+
 class Grid {
   #focused_cell = null;
   #active_textarea = null;
-  table_element = null;
-  scroll_element = null;
+  table_element: HTMLTableElement;
+  scroll_element: HTMLDivElement;
+  target_element: HTMLDivElement;
+  selection_manager: SelectionManager;
+  scroll_manager: ScrollManager;
+  event_manager: EventManager;
+  header_data: HeaderDefinition[];
+  data: object[];
 
-  constructor(element, header_data, data) {
-    this.element = element;
+  constructor(element: HTMLDivElement, header_data: HeaderDefinition[], data: object[]) {
+    this.target_element = element;
     this.header_data = header_data;
     this.data = data;
 
@@ -19,11 +34,11 @@ class Grid {
   }
 
   _createTable() {
-    this.element.classList.add("coresheet_container");
+    this.target_element.classList.add("coresheet_container");
     let inner_el = document.createElement("div");
     inner_el.classList.add("coresheet_content");
     this.scroll_element = inner_el;
-    this.element.appendChild(inner_el);
+    this.target_element.appendChild(inner_el);
 
     let table = document.createElement("table");
     table.classList.add("coresheet");
@@ -83,7 +98,7 @@ class Grid {
       spacer_cell.setAttribute("data-logical-y", row_idx);
       spacer_cell.setAttribute("data-grid-x", 0);
       spacer_cell.setAttribute("data-index-cell", "");
-      spacer_cell.textContent = row_idx;
+      spacer_cell.textContent = row_idx.toString();
       new_row.appendChild(spacer_cell);
 
       for (const [col_idx, column_name] of column_order.entries()) {
@@ -167,7 +182,7 @@ class Grid {
       cell.setAttribute("data-logical-state", "neutral");
     }
     let selected_cells;
-    if (selection.selection_type == selectionType.CELLS) {
+    if (selection.selection_type == SelectionType.CELLS) {
       selected_cells = cells.filter((cell) => {
         const [x, y] = getLogicalCoord(cell);
         return (
@@ -177,12 +192,12 @@ class Grid {
           y <= selection.logical_y_range[1]
         );
       });
-    } else if (selection.selection_type == selectionType.ROWS) {
+    } else if (selection.selection_type == SelectionType.ROWS) {
       selected_cells = cells.filter((cell) => {
         const y = getLogicalY(cell);
         return selection.logical_y_range[0] <= y && y <= selection.logical_y_range[1];
       });
-    } else if (selection.selection_type == selectionType.COLS) {
+    } else if (selection.selection_type == SelectionType.COLS) {
       selected_cells = cells.filter((cell) => {
         const x = getLogicalX(cell);
         return selection.logical_x_range[0] <= x && x <= selection.logical_x_range[1];
@@ -195,50 +210,39 @@ class Grid {
   }
 }
 
-/**
- * Enum for selection type
- * @readonly
- * @enum {string}
- */
-const selectionType = {
-  CELLS: "cells",
-  ROWS: "rows",
-  COLS: "cols",
-};
+enum SelectionType {
+  CELLS,
+  ROWS,
+  COLS,
+}
 
-/**
- * Enum for cell type.
- * @readonly
- * @enum {string}
- */
-const cellType = {
-  DATA: "data",
-  HEADER: "header",
-  INDEX: "index",
-};
+enum cellType {
+  DATA,
+  HEADER,
+  INDEX,
+}
 
 class SelectionManager {
   mousehold_active = false;
   table_element = null;
   shift_active = false;
 
-  /**
-   * @type {selectionType|undefined}
-   */
-  selection_type = null;
+  selection_type: SelectionType = null;
 
   selected_rows_start = null;
-  selceted_rows_end = null;
+  selected_rows_end = null;
 
   selected_columns_start = null;
   selected_columns_end = null;
 
   selected_cells_start_x = null;
   selected_cells_start_y = null;
-  selected_cells_ends_x = null;
+  selected_cells_end_x = null;
   selected_cells_end_y = null;
 
   selection_start_cell = null;
+
+  shiftKey: boolean = false;
 
   constructor(table_element) {
     this.table_element = table_element;
@@ -249,14 +253,14 @@ class SelectionManager {
     this.selection_type = null;
     this.selection_start_cell = null;
     this.selected_rows_start = null;
-    this.selceted_rows_end = null;
+    this.selected_rows_end = null;
 
     this.selected_columns_start = null;
     this.selected_columns_end = null;
 
     this.selected_cells_start_x = null;
     this.selected_cells_start_y = null;
-    this.selected_cells_ends_x = null;
+    this.selected_cells_end_x = null;
     this.selected_cells_end_y = null;
   }
 
@@ -278,11 +282,11 @@ class SelectionManager {
     }
 
     if (e.shiftKey) {
-      if (this.selection_type == selectionType.CELLS) {
+      if (this.selection_type == SelectionType.CELLS) {
         this._onKeyDown_Shift_Cells(e);
-      } else if (this.selection_type == selectionType.ROWS) {
+      } else if (this.selection_type == SelectionType.ROWS) {
         this._onKeyDown_Shift_Rows(e);
-      } else if ((this.selection_type = selectionType.COLS)) {
+      } else if ((this.selection_type = SelectionType.COLS)) {
         this._onKeyDown_Shift_Columns(e);
       }
     } else {
@@ -306,7 +310,7 @@ class SelectionManager {
       this.selected_cells_start_x = this.selected_cells_end_x = x;
       this.selected_cells_start_y = this.selected_cells_end_y = y;
       this.selection_start_cell = getLogicalCell(this.table_element, x, y);
-      this.selection_type = selectionType.CELLS;
+      this.selection_type = SelectionType.CELLS;
       this.table_element.dispatchEvent(new Event("tableselectionchanged"));
     }
   }
@@ -437,7 +441,7 @@ class SelectionManager {
     } else {
       this.mousehold_active = true;
       if (cell_type == cellType.DATA) {
-        this.selection_type = selectionType.CELLS;
+        this.selection_type = SelectionType.CELLS;
         this.selection_start_cell = e.target;
         [this.selected_cells_start_x, this.selected_cells_start_y] = getLogicalCoord(e.target);
         [this.selected_cells_end_x, this.selected_cells_end_y] = [
@@ -445,11 +449,11 @@ class SelectionManager {
           this.selected_cells_start_y,
         ];
       } else if (cell_type == cellType.INDEX) {
-        this.selection_type = selectionType.ROWS;
+        this.selection_type = SelectionType.ROWS;
         this.selected_rows_start = this.selected_rows_end = getLogicalY(e.target);
         this.selection_start_cell = getLogicalCell(this.table_element, 0, this.selected_rows_start);
       } else if (cell_type == cellType.HEADER) {
-        this.selection_type = selectionType.COLS;
+        this.selection_type = SelectionType.COLS;
         this.selected_columns_start = this.selected_columns_end = getLogicalX(e.target);
         this.selection_start_cell = getLogicalCell(
           this.table_element,
@@ -494,9 +498,9 @@ class SelectionManager {
       }
     }
 
-    if (this.selection_type == selectionType.CELLS) {
-    } else if (this.selection_type == selectionType.ROWS) {
-    } else if (this.selection_type == selectionType.COLS) {
+    if (this.selection_type == SelectionType.CELLS) {
+    } else if (this.selection_type == SelectionType.ROWS) {
+    } else if (this.selection_type == SelectionType.COLS) {
     }
 
     //console.log(clientX, clientY);
@@ -506,7 +510,7 @@ class SelectionManager {
     if (!this.mousehold_active) return;
     const cell_type = this.getCellType(e.target);
 
-    if (this.selection_type == selectionType.CELLS) {
+    if (this.selection_type == SelectionType.CELLS) {
       if (cell_type == cellType.DATA) {
         [this.selected_cells_end_x, this.selected_cells_end_y] = getLogicalCoord(e.target);
       } else if (cell_type == cellType.INDEX) {
@@ -514,9 +518,9 @@ class SelectionManager {
       } else if (cell_type == cellType.HEADER) {
         this.selected_cells_end_x = getLogicalX(e.target);
       }
-    } else if (this.selection_type == selectionType.ROWS) {
+    } else if (this.selection_type == SelectionType.ROWS) {
       this.selected_rows_end = getLogicalY(e.target);
-    } else if (this.selection_type == selectionType.COLS) {
+    } else if (this.selection_type == SelectionType.COLS) {
       this.selected_columns_end = getLogicalX(e.target);
     }
     this.table_element.dispatchEvent(new Event("tableselectionchanged"));
@@ -548,7 +552,7 @@ class SelectionManager {
   }
 
   getCurrentSelection() {
-    if (this.selection_type == selectionType.CELLS) {
+    if (this.selection_type == SelectionType.CELLS) {
       const x_range = this._getRange(this.selected_cells_start_x, this.selected_cells_end_x);
       const y_range = this._getRange(this.selected_cells_start_y, this.selected_cells_end_y);
       return {
@@ -556,13 +560,13 @@ class SelectionManager {
         logical_x_range: x_range,
         logical_y_range: y_range,
       };
-    } else if (this.selection_type == selectionType.ROWS) {
+    } else if (this.selection_type == SelectionType.ROWS) {
       const y_range = this._getRange(this.selected_rows_start, this.selected_rows_end);
       return {
         selection_type: this.selection_type,
         logical_y_range: y_range,
       };
-    } else if (this.selection_type == selectionType.COLS) {
+    } else if (this.selection_type == SelectionType.COLS) {
       const x_range = this._getRange(this.selected_columns_start, this.selected_columns_end);
       return {
         selection_type: this.selection_type,
@@ -578,31 +582,39 @@ class SelectionManager {
   }
 }
 
-function getLogicalCell(table_element, logical_x, logical_y) {
+function getLogicalCell(
+  table_element: HTMLTableElement,
+  logical_x: number,
+  logical_y: number
+): HTMLTableCellElement {
   return table_element.querySelector(
     `td[data-logical-x="${logical_x}"][data-logical-y="${logical_y}"]`
   );
 }
 
-function getGridCell(table_element, grid_x, grid_y) {
+function getGridCell(
+  table_element: HTMLTableElement,
+  grid_x: number,
+  grid_y: number
+): HTMLTableCellElement {
   return table_element.querySelector(`td[data-grid-x="${grid_x}"][data-grid-y="${grid_y}"]`);
 }
 
-function clampedDecrement(x, limit) {
+function clampedDecrement(x: number, limit: number): number {
   if (x > limit) return x - 1;
   return x;
 }
 
-function clampedIncrement(x, limit) {
+function clampedIncrement(x: number, limit: number): number {
   if (x < limit) return x + 1;
   return x;
 }
 
-function getLogicalX(element) {
+function getLogicalX(element: HTMLElement): number {
   return parseInt(element.getAttribute("data-logical-x"));
 }
 
-function getLogicalY(element) {
+function getLogicalY(element: HTMLElement): number {
   return parseInt(element.getAttribute("data-logical-y"));
 }
 
@@ -648,6 +660,9 @@ function _isColumnFullyVisible(view_bounds, cell_bounds) {
 }
 
 class ScrollManager {
+  table_element: HTMLTableElement;
+  scroll_element: HTMLDivElement;
+
   constructor(table_element, scroll_element) {
     this.table_element = table_element;
     this.scroll_element = scroll_element;
@@ -781,6 +796,9 @@ class ScrollManager {
 }
 
 class EventManager {
+  selection_manager: SelectionManager;
+  scroll_manager: ScrollManager;
+
   constructor(selection_manager, scroll_manager) {
     this.selection_manager = selection_manager;
     this.scroll_manager = scroll_manager;
