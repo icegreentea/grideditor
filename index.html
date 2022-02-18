@@ -12,7 +12,7 @@
             let target = document.getElementById("target");
             const columns = [...Array(26).keys()].map(x => {return {name:String.fromCharCode(97+x-32)}});
 
-            var grid = new Grid(target, columns, [
+            var grid = new lib.Grid(target, columns, [
                 {"A" : 123, "B": 234, "C": 3455555555555555, "D": 12345678901234567890, "E": 12345678901234567890, "F": 12345678901234567890, "G": 12345678901234567890, "H": 12345678901234567890},
                 {"A" : 123, "B": 234, "C": 345},
                 {"A" : 123, "B": 234, "C": 345},

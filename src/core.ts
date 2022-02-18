@@ -1,11 +1,16 @@
+import {
+  getLogicalCell,
+  getLogicalCoord,
+  getGridCell,
+  clampedDecrement,
+  clampedIncrement,
+  getLogicalX,
+  getLogicalY,
+} from "./helper";
+
 type HeaderDefinition = {
   name: string;
 };
-
-interface Element {
-  setAttribute(name: string, value: boolean): void;
-  setAttribute(name: string, value: number): void;
-}
 
 class Grid {
   #focused_cell = null;
@@ -25,9 +30,11 @@ class Grid {
     this.data = data;
 
     this._createTable();
+
     this.selection_manager = new SelectionManager(this.table_element);
     this.scroll_manager = new ScrollManager(this.table_element, this.scroll_element);
     this.event_manager = new EventManager(this.selection_manager, this.scroll_manager);
+
     this.table_element.addEventListener("tableselectionchanged", (e) =>
       this.tableSelectionChanged(e)
     );
@@ -216,36 +223,94 @@ enum SelectionType {
   COLS,
 }
 
-enum cellType {
+enum CellType {
   DATA,
   HEADER,
   INDEX,
 }
 
+type SelectionRange = { start: number; end: number };
+type SeletionOperation = "add" | "remove" | "set";
+
+type SelectionEvent = CellsSelectionEvent | RowsSelectionEvent | ColumnsSelectionEvent;
+
+type CellsSelectionEvent = {
+  operation: SeletionOperation;
+  selection_type: SelectionType;
+  x_range: SelectionRange;
+  y_range: SelectionRange;
+  delta_x_range: SelectionRange;
+  delta_y_range: SelectionRange;
+};
+
+type RowsSelectionEvent = {
+  operation: SeletionOperation;
+  selection_type: SelectionType;
+  y_range: SelectionRange;
+  delta_y_range: SelectionRange;
+};
+
+type ColumnsSelectionEvent = {
+  operation: SeletionOperation;
+  selection_type: SelectionType;
+  x_range: SelectionRange;
+  delta_x_range: SelectionRange;
+};
+
 class SelectionManager {
   mousehold_active = false;
-  table_element = null;
+  table_element: HTMLTableElement = null;
   shift_active = false;
 
-  selection_type: SelectionType = null;
+  selection_type: SelectionType = SelectionType.CELLS;
 
-  selected_rows_start = null;
-  selected_rows_end = null;
+  selected_rows_start: number = 1;
+  selected_rows_end: number = 1;
 
-  selected_columns_start = null;
-  selected_columns_end = null;
+  selected_columns_start: number = 1;
+  selected_columns_end: number = 1;
 
-  selected_cells_start_x = null;
-  selected_cells_start_y = null;
-  selected_cells_end_x = null;
-  selected_cells_end_y = null;
+  selected_cells_start_x: number = 1;
+  selected_cells_start_y: number = 1;
+  selected_cells_end_x: number = 1;
+  selected_cells_end_y: number = 1;
 
-  selection_start_cell = null;
+  selection_start_cell: HTMLTableCellElement = null;
 
   shiftKey: boolean = false;
 
   constructor(table_element) {
     this.table_element = table_element;
+    this.selection_start_cell = getLogicalCell(this.table_element, 0, 0);
+    this.table_element.dispatchEvent(new Event("tableselectionchanged"));
+  }
+
+  get selected_cells_x_range(): SelectionRange {
+    return {
+      start: this.selected_cells_start_x,
+      end: this.selected_cells_end_x,
+    };
+  }
+
+  get selected_cells_y_range(): SelectionRange {
+    return {
+      start: this.selected_cells_start_y,
+      end: this.selected_cells_end_y,
+    };
+  }
+
+  get selected_rows_range(): SelectionRange {
+    return {
+      start: this.selected_rows_start,
+      end: this.selected_rows_end,
+    };
+  }
+
+  get selected_column_range(): SelectionRange {
+    return {
+      start: this.selected_columns_start,
+      end: this.selected_columns_end,
+    };
   }
 
   deactivate() {
@@ -311,7 +376,19 @@ class SelectionManager {
       this.selected_cells_start_y = this.selected_cells_end_y = y;
       this.selection_start_cell = getLogicalCell(this.table_element, x, y);
       this.selection_type = SelectionType.CELLS;
-      this.table_element.dispatchEvent(new Event("tableselectionchanged"));
+      const ev: CellsSelectionEvent = {
+        operation: "set",
+        selection_type: SelectionType.CELLS,
+        x_range: this.selected_cells_x_range,
+        y_range: this.selected_cells_y_range,
+        delta_x_range: this.selected_cells_x_range,
+        delta_y_range: this.selected_cells_y_range,
+      };
+      this.table_element.dispatchEvent(
+        new CustomEvent("tableselectionchanged", {
+          detail: ev,
+        })
+      );
     }
   }
 
@@ -368,31 +445,54 @@ class SelectionManager {
     const max_y = parseInt(this.table_element.getAttribute("data-logical-max-y"));
     const base_y = getLogicalY(this.selection_start_cell);
     let y_range = this._getRange(this.selected_rows_start, this.selected_rows_end);
+    let operation: SeletionOperation;
+    let delta: number;
+
     if (e.keyCode == 37) {
       // left-arrow
+      return;
     } else if (e.keyCode == 39) {
       //right-arrow
+      return;
     } else if (e.keyCode == 38) {
       // up-arrow
       if (y_range[0] == base_y) {
         // selection to below of start
+        delta = y_range[1];
         y_range[1] = clampedDecrement(y_range[1], 0);
+        operation = "remove";
       } else if (y_range[1] == base_y) {
         // selection to above of start
         y_range[0] = clampedDecrement(y_range[0], 0);
+        delta = y_range[0];
+        operation = "add";
       }
     } else if (e.keyCode == 40) {
       // down-arrow
       if (y_range[0] == base_y) {
         // selection to below of start
         y_range[1] = clampedIncrement(y_range[1], max_y - 1);
+        delta = y_range[1];
+        operation = "add";
       } else if (y_range[1] == base_y) {
         // selection to above of start
+        delta = y_range[0];
         y_range[0] = clampedIncrement(y_range[0], max_y - 1);
+        operation = "remove";
       }
     }
     [this.selected_rows_start, this.selected_rows_end] = y_range;
-    this.table_element.dispatchEvent(new Event("tableselectionchanged"));
+    const ev: RowsSelectionEvent = {
+      operation: operation,
+      selection_type: SelectionType.ROWS,
+      y_range: this.selected_rows_range,
+      delta_y_range: { start: delta, end: delta },
+    };
+    this.table_element.dispatchEvent(
+      new CustomEvent("tableselectionchanged", {
+        detail: ev,
+      })
+    );
   }
 
   _onKeyDown_Shift_Columns(e) {
@@ -400,31 +500,54 @@ class SelectionManager {
     const max_y = parseInt(this.table_element.getAttribute("data-logical-max-y"));
     const base_x = getLogicalX(this.selection_start_cell);
     let x_range = this._getRange(this.selected_columns_start, this.selected_columns_end);
+    let operation: SeletionOperation;
+    let delta: number;
+
     if (e.keyCode == 37) {
       // left-arrow
       if (x_range[0] == base_x) {
         // selection to right of start
+        delta = x_range[1];
         x_range[1] = clampedDecrement(x_range[1], 0);
+        operation = "remove";
       } else if (x_range[1] == base_x) {
         // selection to left of start
         x_range[0] = clampedDecrement(x_range[0], 0);
+        delta = x_range[0];
+        operation = "add";
       }
     } else if (e.keyCode == 39) {
       //right-arrow
       if (x_range[0] == base_x) {
         // selection to right of start
         x_range[1] = clampedIncrement(x_range[1], max_x - 1);
+        delta = x_range[1];
+        operation = "add";
       } else if (x_range[1] == base_x) {
         // selection to left of start
+        delta = x_range[0];
         x_range[0] = clampedIncrement(x_range[0], max_x - 1);
+        operation = "remove";
       }
     } else if (e.keyCode == 38) {
       // up-arrow
+      return;
     } else if (e.keyCode == 40) {
       // down-arrow
+      return;
     }
     [this.selected_columns_start, this.selected_columns_end] = x_range;
-    this.table_element.dispatchEvent(new Event("tableselectionchanged"));
+    const ev: ColumnsSelectionEvent = {
+      operation: operation,
+      selection_type: SelectionType.COLS,
+      x_range: this.selected_column_range,
+      delta_x_range: { start: delta, end: delta },
+    };
+    this.table_element.dispatchEvent(
+      new CustomEvent("tableselectionchanged", {
+        detail: ev,
+      })
+    );
   }
 
   onTableCellMouseDown(e) {
@@ -434,13 +557,15 @@ class SelectionManager {
     }
     const cell_type = this.getCellType(e.target);
     if (this.shift_active) {
-      if (cell_type == cellType.DATA) {
-      } else if (cell_type == cellType.INDEX) {
-      } else if (cell_type == cellType.HEADER) {
+      if (cell_type == CellType.DATA) {
+      } else if (cell_type == CellType.INDEX) {
+      } else if (cell_type == CellType.HEADER) {
       }
+      return;
     } else {
+      let ev: SelectionEvent;
       this.mousehold_active = true;
-      if (cell_type == cellType.DATA) {
+      if (cell_type == CellType.DATA) {
         this.selection_type = SelectionType.CELLS;
         this.selection_start_cell = e.target;
         [this.selected_cells_start_x, this.selected_cells_start_y] = getLogicalCoord(e.target);
@@ -448,11 +573,27 @@ class SelectionManager {
           this.selected_cells_start_x,
           this.selected_cells_start_y,
         ];
-      } else if (cell_type == cellType.INDEX) {
+        const _ev: CellsSelectionEvent = {
+          operation: "add",
+          selection_type: SelectionType.CELLS,
+          x_range: this.selected_cells_x_range,
+          y_range: this.selected_cells_y_range,
+          delta_x_range: this.selected_cells_x_range,
+          delta_y_range: this.selected_cells_y_range,
+        };
+        ev = _ev;
+      } else if (cell_type == CellType.INDEX) {
         this.selection_type = SelectionType.ROWS;
         this.selected_rows_start = this.selected_rows_end = getLogicalY(e.target);
         this.selection_start_cell = getLogicalCell(this.table_element, 0, this.selected_rows_start);
-      } else if (cell_type == cellType.HEADER) {
+        const _ev: RowsSelectionEvent = {
+          operation: "set",
+          selection_type: SelectionType.ROWS,
+          y_range: this.selected_rows_range,
+          delta_y_range: this.selected_rows_range,
+        };
+        ev = _ev;
+      } else if (cell_type == CellType.HEADER) {
         this.selection_type = SelectionType.COLS;
         this.selected_columns_start = this.selected_columns_end = getLogicalX(e.target);
         this.selection_start_cell = getLogicalCell(
@@ -460,10 +601,21 @@ class SelectionManager {
           this.selected_columns_start,
           0
         );
+        const _ev: ColumnsSelectionEvent = {
+          operation: "set",
+          selection_type: SelectionType.COLS,
+          x_range: this.selected_column_range,
+          delta_x_range: this.selected_column_range,
+        };
+        ev = _ev;
       }
-    }
 
-    this.table_element.dispatchEvent(new Event("tableselectionchanged"));
+      this.table_element.dispatchEvent(
+        new CustomEvent("tableselectionchanged", {
+          detail: ev,
+        })
+      );
+    }
   }
 
   getVisibleCells() {
@@ -511,11 +663,11 @@ class SelectionManager {
     const cell_type = this.getCellType(e.target);
 
     if (this.selection_type == SelectionType.CELLS) {
-      if (cell_type == cellType.DATA) {
+      if (cell_type == CellType.DATA) {
         [this.selected_cells_end_x, this.selected_cells_end_y] = getLogicalCoord(e.target);
-      } else if (cell_type == cellType.INDEX) {
+      } else if (cell_type == CellType.INDEX) {
         this.selected_cells_end_y = getLogicalY(e.target);
-      } else if (cell_type == cellType.HEADER) {
+      } else if (cell_type == CellType.HEADER) {
         this.selected_cells_end_x = getLogicalX(e.target);
       }
     } else if (this.selection_type == SelectionType.ROWS) {
@@ -540,15 +692,15 @@ class SelectionManager {
   /**
    *
    * @param {*} elem
-   * @returns {cellType}
+   * @returns {CellType}
    */
   getCellType(elem) {
     if (elem.hasAttribute("data-header-cell")) {
-      return cellType.HEADER;
+      return CellType.HEADER;
     } else if (elem.hasAttribute("data-index-cell")) {
-      return cellType.INDEX;
+      return CellType.INDEX;
     }
-    return cellType.DATA;
+    return CellType.DATA;
   }
 
   getCurrentSelection() {
@@ -580,49 +732,6 @@ class SelectionManager {
     if (a > b) return [b, a];
     return [a, b];
   }
-}
-
-function getLogicalCell(
-  table_element: HTMLTableElement,
-  logical_x: number,
-  logical_y: number
-): HTMLTableCellElement {
-  return table_element.querySelector(
-    `td[data-logical-x="${logical_x}"][data-logical-y="${logical_y}"]`
-  );
-}
-
-function getGridCell(
-  table_element: HTMLTableElement,
-  grid_x: number,
-  grid_y: number
-): HTMLTableCellElement {
-  return table_element.querySelector(`td[data-grid-x="${grid_x}"][data-grid-y="${grid_y}"]`);
-}
-
-function clampedDecrement(x: number, limit: number): number {
-  if (x > limit) return x - 1;
-  return x;
-}
-
-function clampedIncrement(x: number, limit: number): number {
-  if (x < limit) return x + 1;
-  return x;
-}
-
-function getLogicalX(element: HTMLElement): number {
-  return parseInt(element.getAttribute("data-logical-x"));
-}
-
-function getLogicalY(element: HTMLElement): number {
-  return parseInt(element.getAttribute("data-logical-y"));
-}
-
-function getLogicalCoord(element) {
-  return [
-    parseInt(element.getAttribute("data-logical-x")),
-    parseInt(element.getAttribute("data-logical-y")),
-  ];
 }
 
 function _isCellVisible(view_bounds, cell_bounds) {
@@ -811,3 +920,5 @@ class EventManager {
     document.addEventListener("mousemove", (e) => this.selection_manager.onMouseMove(e));
   }
 }
+
+export { Grid };

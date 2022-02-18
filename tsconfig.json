@@ -1,7 +1,13 @@
 {
     "compilerOptions" : {
-        "target" : "ES2015"
+        "target" : "ES2015",
+        "sourceMap": true,
+        "outDir": "dist",
+        "module":"CommonJS",
+        // enabling for esbuild 
+        "esModuleInterop": true
     },
+    "compileOnSave": true,
     "include" : ["src/**/*"],
-    "exclude": ["node_modules", "core.js"]
+    "exclude": ["node_modules", "core.js"],
 }

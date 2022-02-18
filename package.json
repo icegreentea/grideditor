@@ -1,0 +1,24 @@
+{
+  "dependencies": {
+    "esbuild": "^0.14.22"
+  },
+  "name": "grideditor",
+  "description": "",
+  "version": "1.0.0",
+  "main": "src/core.ts",
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "esbuild src/core.ts --bundle --sourcemap --target=chrome60,firefox60,safari11,edge18 --format=iife --outdir=dist --global-name=lib"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/icegreentea/grideditor.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/icegreentea/grideditor/issues"
+  },
+  "homepage": "https://github.com/icegreentea/grideditor#readme"
+}
