@@ -13,6 +13,13 @@ enum SelectionType {
   COLS,
 }
 
+const DIRECTION_MAP = {
+  ArrowUp: "up",
+  ArrowDown: "down",
+  ArrowLeft: "left",
+  ArrowRight: "right",
+};
+
 type SelectionOperation = "set" | "add" | "remove" | "noop";
 
 type SelectionEvent = CellsSelectionEvent | RowsSelectionEvent | ColumnsSelectionEvent;
@@ -84,10 +91,39 @@ class SelectionManager {
       this.shift_active = false;
     }
 
+    const max_x = parseInt(this.table_element.getAttribute("data-logical-max-x"));
+    const max_y = parseInt(this.table_element.getAttribute("data-logical-max-y"));
+
     if (e.shiftKey) {
+      const [base_x, base_y] = getLogicalCoord(this.selection_start_cell);
+      let ev: SelectionEvent;
+      if (this.selection_type == SelectionType.CELLS) {
+        if (e.key == "ArrowLeft") {
+          ev = this.cell_selection_manager.translateSelectionEnd("left", max_x, max_y);
+        } else if (e.key == "ArrowRight") {
+          ev = this.cell_selection_manager.translateSelectionEnd("right", max_x, max_y);
+        } else if (e.key == "ArrowUp") {
+          ev = this.cell_selection_manager.translateSelectionEnd("up", max_x, max_y);
+        } else if (e.key == "ArrowDown") {
+          ev = this.cell_selection_manager.translateSelectionEnd("down", max_x, max_y);
+        }
+      } else if (this.selection_type == SelectionType.COLS) {
+        if (e.key == "ArrowLeft") {
+          ev = this.column_selection_manager.translateSelectionEnd("left", max_x);
+        } else if (e.key == "ArrowRight") {
+          ev = this.column_selection_manager.translateSelectionEnd("right", max_x);
+        }
+      } else if (this.selection_type == SelectionType.ROWS) {
+        if (e.key == "ArrowUp") {
+          ev = this.row_selection_manager.translateSelectionEnd("up", max_y);
+        } else if (e.key == "ArrowDown") {
+          ev = this.row_selection_manager.translateSelectionEnd("down", max_y);
+        }
+      }
+      if (ev != null) {
+        this.raiseTableSelectionChanged(ev);
+      }
     } else {
-      const max_x = parseInt(this.table_element.getAttribute("data-logical-max-x"));
-      const max_y = parseInt(this.table_element.getAttribute("data-logical-max-y"));
       let [x, y] = getLogicalCoord(this.selection_start_cell);
       if (e.key == "ArrowLeft") {
         if (x > 0) x = x - 1;
@@ -244,7 +280,37 @@ class CellSelectionManager {
       delta_x_range: SelectionRange.Noop(),
       delta_y_range: delta_y,
     };
+    this.x_range = new_x_range;
+    this.y_range = new_y_range;
     return [x_event, y_event];
+  }
+
+  translateSelectionEnd(
+    direction: "left" | "right" | "up" | "down",
+    max_x: number,
+    max_y: number
+  ): SelectionEvent | undefined {
+    if (direction == "left") {
+      if (this.x_range.end > 0) {
+        const [x_event, y_event] = this.updateSelectionEnd(this.x_range.end - 1, null);
+        return x_event;
+      }
+    } else if (direction == "right") {
+      if (this.x_range.end < max_x - 1) {
+        const [x_event, y_event] = this.updateSelectionEnd(this.x_range.end + 1, null);
+        return x_event;
+      }
+    } else if (direction == "up") {
+      if (this.y_range.end > 0) {
+        const [x_event, y_event] = this.updateSelectionEnd(null, this.y_range.end - 1);
+        return y_event;
+      }
+    } else if (direction == "down") {
+      if (this.y_range.end < max_y - 1) {
+        const [x_event, y_event] = this.updateSelectionEnd(null, this.y_range.end + 1);
+        return y_event;
+      }
+    }
   }
 }
 
@@ -293,7 +359,20 @@ class RowSelectionManager {
       y_range: new_y_range,
       delta_y_range: delta_y,
     };
+    this.y_range = new_y_range;
     return y_event;
+  }
+
+  translateSelectionEnd(direction: "up" | "down", max_y: number): RowsSelectionEvent | undefined {
+    if (direction == "up") {
+      if (this.y_range.end > 0) {
+        return this.updateSelectionEnd(this.y_range.end - 1);
+      }
+    } else if (direction == "down") {
+      if (this.y_range.end < max_y - 1) {
+        return this.updateSelectionEnd(this.y_range.end + 1);
+      }
+    }
   }
 }
 
@@ -341,7 +420,23 @@ class ColumnSelectionManager {
       x_range: new_x_range,
       delta_x_range: delta_x,
     };
+    this.x_range = new_x_range;
     return x_event;
+  }
+
+  translateSelectionEnd(
+    direction: "left" | "right",
+    max_x: number
+  ): ColumnsSelectionEvent | undefined {
+    if (direction == "left") {
+      if (this.x_range.end > 0) {
+        return this.updateSelectionEnd(this.x_range.end - 1);
+      }
+    } else if (direction == "right") {
+      if (this.x_range.end < max_x - 1) {
+        return this.updateSelectionEnd(this.x_range.end + 1);
+      }
+    }
   }
 }
 
