@@ -54,6 +54,24 @@ class SelectionManager {
     );
   }
 
+  onKeyUp(e: KeyboardEvent) {
+    if (!e.shiftKey) {
+      this.shift_active = false;
+    }
+  }
+
+  onKeyDown(e: KeyboardEvent) {
+    if (this.selection_start_cell === null) {
+      return;
+    }
+    if (e.key == "Shift") {
+      this.shift_active = true;
+    }
+    if (!e.shiftKey) {
+      this.shift_active = false;
+    }
+  }
+
   onTableCellMouseDown(e: MouseEvent) {
     if (this.mousehold_active) {
       this.deactivate();
@@ -61,12 +79,22 @@ class SelectionManager {
     }
 
     const cell_type = getCellType(e.target as HTMLTableCellElement);
+    this.mousehold_active = true;
+    const [x, y] = getNearestLogicalCoord(e.target);
+    let ev: SelectionEvent;
     if (this.shift_active) {
+      if (this.selection_type == SelectionType.CELLS) {
+        const evs = this.cell_selection_manager.updateSelectionEnd(x, y);
+        this.raiseTableSelectionChanged(evs[0]);
+        this.raiseTableSelectionChanged(evs[1]);
+      } else if (this.selection_type == SelectionType.COLS) {
+        const ev = this.column_selection_manager.updateSelectionEnd(x);
+        this.raiseTableSelectionChanged(ev);
+      } else if (this.selection_type == SelectionType.ROWS) {
+        const ev = this.row_selection_manager.updateSelectionEnd(y);
+        this.raiseTableSelectionChanged(ev);
+      }
     } else {
-      this.mousehold_active = true;
-      const [x, y] = getNearestLogicalCoord(e.target);
-      let ev: SelectionEvent;
-
       if (cell_type == CellType.DATA) {
         this.selection_type = SelectionType.CELLS;
         this.selection_start_cell = e.target as HTMLTableCellElement;

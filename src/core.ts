@@ -451,8 +451,8 @@ class EventManager {
   }
 
   _setupEventChains() {
-    //document.addEventListener("keydown", (e) => this.selection_manager.onKeyDown(e));
-    //document.addEventListener("keyup", (e) => this.selection_manager.onKeyUp(e));
+    document.addEventListener("keydown", (e) => this.selection_manager.onKeyDown(e));
+    document.addEventListener("keyup", (e) => this.selection_manager.onKeyUp(e));
     //document.addEventListener("mousemove", (e) => this.selection_manager.onMouseMove(e));
   }
 }
