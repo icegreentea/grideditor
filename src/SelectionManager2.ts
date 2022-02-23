@@ -20,18 +20,31 @@ type SelectionEvent = CellsSelectionEvent | RowsSelectionEvent | ColumnsSelectio
 class SelectionManager {
   mousehold_active = false;
   shift_active = false;
-  table_element: HTMLTableElement = null;
+  #table_element: HTMLTableElement = null;
   selection_start_cell: HTMLTableCellElement = null;
   #selection_type: SelectionType;
   cell_selection_manager: CellSelectionManager;
   row_selection_manager: RowSelectionManager;
   column_selection_manager: ColumnSelectionManager;
 
+  #max_x: number;
+  #max_y: number;
+
   constructor(table_element) {
     this.table_element = table_element;
     this.cell_selection_manager = new CellSelectionManager();
     this.row_selection_manager = new RowSelectionManager();
     this.column_selection_manager = new ColumnSelectionManager();
+  }
+
+  get table_element(): HTMLTableElement {
+    return this.#table_element;
+  }
+
+  public set table_element(v: HTMLTableElement) {
+    if (this.#table_element !== v) {
+      this.#table_element = v;
+    }
   }
 
   get selection_type() {
@@ -69,6 +82,26 @@ class SelectionManager {
     }
     if (!e.shiftKey) {
       this.shift_active = false;
+    }
+
+    if (e.shiftKey) {
+    } else {
+      const max_x = parseInt(this.table_element.getAttribute("data-logical-max-x"));
+      const max_y = parseInt(this.table_element.getAttribute("data-logical-max-y"));
+      let [x, y] = getLogicalCoord(this.selection_start_cell);
+      if (e.key == "ArrowLeft") {
+        if (x > 0) x = x - 1;
+      } else if (e.key == "ArrowRight") {
+        if (x < max_x - 1) x = x + 1;
+      } else if (e.key == "ArrowUp") {
+        if (y > 0) y = y - 1;
+      } else if (e.key == "ArrowDown") {
+        if (y < max_y - 1) y = y + 1;
+      }
+      this.selection_type = SelectionType.CELLS;
+      this.selection_start_cell = getLogicalCell(this.table_element, x, y);
+      const ev = this.cell_selection_manager.setSelection(x, y, this.selection_start_cell);
+      this.raiseTableSelectionChanged(ev);
     }
   }
 
