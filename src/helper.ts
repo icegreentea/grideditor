@@ -1,3 +1,6 @@
+type XCoord = number;
+type YCoord = number;
+
 function getLogicalCell(
   table_element: HTMLTableElement,
   logical_x: number,
@@ -26,15 +29,15 @@ function clampedIncrement(x: number, limit: number): number {
   return x;
 }
 
-function getLogicalX(element: HTMLElement): number {
+function getLogicalX(element: HTMLElement): XCoord {
   return parseInt(element.getAttribute("data-logical-x"));
 }
 
-function getLogicalY(element: HTMLElement): number {
+function getLogicalY(element: HTMLElement): YCoord {
   return parseInt(element.getAttribute("data-logical-y"));
 }
 
-function getLogicalCoord(element) {
+function getLogicalCoord(element): [XCoord, YCoord] {
   return [
     parseInt(element.getAttribute("data-logical-x")),
     parseInt(element.getAttribute("data-logical-y")),

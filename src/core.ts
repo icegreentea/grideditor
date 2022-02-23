@@ -7,6 +7,7 @@ import {
   getLogicalX,
   getLogicalY,
 } from "./helper";
+/*
 import {
   SelectionManager,
   SelectionType,
@@ -15,6 +16,17 @@ import {
   RowsSelectionEvent,
   ColumnsSelectionEvent,
 } from "./SelectionManager";
+*/
+import {
+  SelectionType,
+  CellType,
+  SelectionOperation,
+  SelectionManager,
+  SelectionEvent,
+  CellsSelectionEvent,
+  RowsSelectionEvent,
+  ColumnsSelectionEvent,
+} from "./SelectionManager2";
 
 type HeaderDefinition = {
   name: string;
@@ -133,8 +145,8 @@ class Grid {
     for (const cell of all_cells) {
       //cell.addEventListener("click", (e) => this.tableCellOnClick(e))
       cell.addEventListener("mousedown", (e) => this.selection_manager.onTableCellMouseDown(e));
-      cell.addEventListener("mouseenter", (e) => this.selection_manager.onTableCellMouseEnter(e));
-      cell.addEventListener("mouseleave", (e) => this.selection_manager.onTableCellMouseLeave(e));
+      //cell.addEventListener("mouseenter", (e) => this.selection_manager.onTableCellMouseEnter(e));
+      //cell.addEventListener("mouseleave", (e) => this.selection_manager.onTableCellMouseLeave(e));
       cell.addEventListener("mouseup", (e) => this.selection_manager.onTableCellMouseUp(e));
       cell.setAttribute("data-logical-state", "neutral");
     }
@@ -198,15 +210,33 @@ class Grid {
 
     if ("detail" in e) {
       let ev: SelectionEvent = e.detail;
-      switch (ev.selection_type) {
-        case SelectionType.CELLS: {
-        }
-        case SelectionType.ROWS: {
-        }
-        case SelectionType.COLS: {
+      let selected_cells: HTMLTableCellElement[];
+      if (ev.operation == "set") {
+        if (ev.selection_type == SelectionType.CELLS) {
+          selected_cells = cells.filter((cell) => {
+            const [x, y] = getLogicalCoord(cell);
+            return (
+              (ev as CellsSelectionEvent).x_range.contains(x) &&
+              (ev as CellsSelectionEvent).y_range.contains(y)
+            );
+          });
+        } else if (ev.selection_type == SelectionType.ROWS) {
+          selected_cells = cells.filter((cell) => {
+            const [x, y] = getLogicalCoord(cell);
+            return (ev as RowsSelectionEvent).y_range.contains(y);
+          });
+        } else if (ev.selection_type == SelectionType.COLS) {
+          selected_cells = cells.filter((cell) => {
+            const [x, y] = getLogicalCoord(cell);
+            return (ev as ColumnsSelectionEvent).x_range.contains(x);
+          });
         }
       }
+      for (const cell of selected_cells) {
+        cell.setAttribute("data-logical-state", "selected");
+      }
     } else {
+      /*
       const selection = this.selection_manager.getCurrentSelection();
 
       let selected_cells;
@@ -235,6 +265,7 @@ class Grid {
       for (const cell of selected_cells) {
         cell.setAttribute("data-logical-state", "selected");
       }
+      */
     }
   }
 }
@@ -420,9 +451,9 @@ class EventManager {
   }
 
   _setupEventChains() {
-    document.addEventListener("keydown", (e) => this.selection_manager.onKeyDown(e));
-    document.addEventListener("keyup", (e) => this.selection_manager.onKeyUp(e));
-    document.addEventListener("mousemove", (e) => this.selection_manager.onMouseMove(e));
+    //document.addEventListener("keydown", (e) => this.selection_manager.onKeyDown(e));
+    //document.addEventListener("keyup", (e) => this.selection_manager.onKeyUp(e));
+    //document.addEventListener("mousemove", (e) => this.selection_manager.onMouseMove(e));
   }
 }
 
