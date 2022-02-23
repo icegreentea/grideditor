@@ -6,6 +6,7 @@ import {
   clampedIncrement,
   getLogicalX,
   getLogicalY,
+  CellType,
 } from "./helper";
 /*
 import {
@@ -19,7 +20,6 @@ import {
 */
 import {
   SelectionType,
-  CellType,
   SelectionOperation,
   SelectionManager,
   SelectionEvent,
@@ -145,7 +145,7 @@ class Grid {
     for (const cell of all_cells) {
       //cell.addEventListener("click", (e) => this.tableCellOnClick(e))
       cell.addEventListener("mousedown", (e) => this.selection_manager.onTableCellMouseDown(e));
-      //cell.addEventListener("mouseenter", (e) => this.selection_manager.onTableCellMouseEnter(e));
+      cell.addEventListener("mouseenter", (e) => this.selection_manager.onTableCellMouseEnter(e));
       //cell.addEventListener("mouseleave", (e) => this.selection_manager.onTableCellMouseLeave(e));
       cell.addEventListener("mouseup", (e) => this.selection_manager.onTableCellMouseUp(e));
       cell.setAttribute("data-logical-state", "neutral");
@@ -203,15 +203,14 @@ class Grid {
   }
 
   tableSelectionChanged(e) {
-    const cells = Array.from(this.table_element.querySelectorAll(`td`));
-    for (const cell of cells) {
-      cell.setAttribute("data-logical-state", "neutral");
-    }
-
     if ("detail" in e) {
       let ev: SelectionEvent = e.detail;
       let selected_cells: HTMLTableCellElement[];
-      if (ev.operation == "set") {
+      if (ev.operation != "noop") {
+        const cells = Array.from(this.table_element.querySelectorAll(`td`));
+        for (const cell of cells) {
+          cell.setAttribute("data-logical-state", "neutral");
+        }
         if (ev.selection_type == SelectionType.CELLS) {
           selected_cells = cells.filter((cell) => {
             const [x, y] = getLogicalCoord(cell);
@@ -231,9 +230,10 @@ class Grid {
             return (ev as ColumnsSelectionEvent).x_range.contains(x);
           });
         }
-      }
-      for (const cell of selected_cells) {
-        cell.setAttribute("data-logical-state", "selected");
+
+        for (const cell of selected_cells) {
+          cell.setAttribute("data-logical-state", "selected");
+        }
       }
     } else {
       /*

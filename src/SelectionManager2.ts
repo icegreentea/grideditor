@@ -1,4 +1,10 @@
-import { getLogicalCell, getLogicalCoord } from "./helper";
+import {
+  getLogicalCell,
+  getLogicalCoord,
+  CellType,
+  getCellType,
+  getNearestLogicalCoord,
+} from "./helper";
 import SelectionRange from "./SelectionRange";
 
 enum SelectionType {
@@ -7,13 +13,7 @@ enum SelectionType {
   COLS,
 }
 
-enum CellType {
-  DATA,
-  INDEX,
-  HEADER,
-}
-
-type SelectionOperation = "set" | "add" | "remove";
+type SelectionOperation = "set" | "add" | "remove" | "noop";
 
 type SelectionEvent = CellsSelectionEvent | RowsSelectionEvent | ColumnsSelectionEvent;
 
@@ -22,7 +22,7 @@ class SelectionManager {
   shift_active = false;
   table_element: HTMLTableElement = null;
   selection_start_cell: HTMLTableCellElement = null;
-  selection_type: SelectionType;
+  #selection_type: SelectionType;
   cell_selection_manager: CellSelectionManager;
   row_selection_manager: RowSelectionManager;
   column_selection_manager: ColumnSelectionManager;
@@ -34,7 +34,25 @@ class SelectionManager {
     this.column_selection_manager = new ColumnSelectionManager();
   }
 
+  get selection_type() {
+    return this.#selection_type;
+  }
+
+  public set selection_type(v: SelectionType) {
+    if (v != this.#selection_type) {
+      this.#selection_type = v;
+    }
+  }
+
   deactivate() {}
+
+  raiseTableSelectionChanged(ev: SelectionEvent) {
+    this.table_element.dispatchEvent(
+      new CustomEvent("tableselectionchanged", {
+        detail: ev,
+      })
+    );
+  }
 
   onTableCellMouseDown(e: MouseEvent) {
     if (this.mousehold_active) {
@@ -46,7 +64,7 @@ class SelectionManager {
     if (this.shift_active) {
     } else {
       this.mousehold_active = true;
-      const [x, y] = getLogicalCoord(e.target);
+      const [x, y] = getNearestLogicalCoord(e.target);
       let ev: SelectionEvent;
 
       if (cell_type == CellType.DATA) {
@@ -55,19 +73,15 @@ class SelectionManager {
         ev = this.cell_selection_manager.setSelection(x, y, this.selection_start_cell);
       } else if (cell_type == CellType.INDEX) {
         this.selection_type = SelectionType.ROWS;
-        this.selection_start_cell = getLogicalCell(this.table_element, 0, y);
+        this.selection_start_cell = getLogicalCell(this.table_element, x, y);
         ev = this.row_selection_manager.setSelection(y, this.selection_start_cell);
       } else if (cell_type == CellType.HEADER) {
         this.selection_type = SelectionType.COLS;
-        this.selection_start_cell = getLogicalCell(this.table_element, x, 0);
+        this.selection_start_cell = getLogicalCell(this.table_element, x, y);
         ev = this.column_selection_manager.setSelection(x, this.selection_start_cell);
       }
       if (ev != null) {
-        this.table_element.dispatchEvent(
-          new CustomEvent("tableselectionchanged", {
-            detail: ev,
-          })
-        );
+        this.raiseTableSelectionChanged(ev);
       }
     }
   }
@@ -81,38 +95,30 @@ class SelectionManager {
     if (!this.mousehold_active) return;
     const cell_type = getCellType(target);
 
-    let operation = "add" as SelectionOperation;
+    const [new_x, new_y] = getNearestLogicalCoord(target);
 
     if (this.selection_type == SelectionType.CELLS) {
-      if (cell_type == CellType.DATA) {
-        const [new_x, new_y] = getLogicalCoord(target);
-        if (this.cell_selection_manager.contains(new_x, new_y)) {
-          operation = "remove";
-        }
-      }
+      const [x_event, y_event] = this.cell_selection_manager.updateSelectionEnd(new_x, new_y);
+      this.raiseTableSelectionChanged(x_event);
+      this.raiseTableSelectionChanged(y_event);
     } else if (this.selection_type == SelectionType.ROWS) {
+      const ev = this.row_selection_manager.updateSelectionEnd(new_y);
+      this.raiseTableSelectionChanged(ev);
     } else if (this.selection_type == SelectionType.COLS) {
+      const ev = this.column_selection_manager.updateSelectionEnd(new_x);
+      this.raiseTableSelectionChanged(ev);
     }
   }
 }
 
-type CellsSelectionEvent =
-  | {
-      selection_type: SelectionType.CELLS;
-      operation: "add" | "remove";
-      x_range: SelectionRange;
-      y_range: SelectionRange;
-      delta_x_range: SelectionRange;
-      delta_y_range: SelectionRange;
-    }
-  | {
-      selection_type: SelectionType.CELLS;
-      operation: "set";
-      x_range: SelectionRange;
-      y_range: SelectionRange;
-      delta_x_range?: never;
-      delta_y_range?: never;
-    };
+type CellsSelectionEvent = {
+  selection_type: SelectionType.CELLS;
+  operation: SelectionOperation;
+  x_range: SelectionRange;
+  y_range: SelectionRange;
+  delta_x_range: SelectionRange;
+  delta_y_range: SelectionRange;
+};
 
 class CellSelectionManager {
   selection_start_cell: HTMLTableCellElement = null;
@@ -141,6 +147,8 @@ class CellSelectionManager {
       selection_type: SelectionType.CELLS,
       x_range: this.x_range,
       y_range: this.y_range,
+      delta_x_range: SelectionRange.Noop(),
+      delta_y_range: SelectionRange.Noop(),
     };
   }
 
@@ -148,22 +156,43 @@ class CellSelectionManager {
     return this.x_range.contains(x) && this.y_range.contains(y);
   }
 
-  shrinkSelecetion(x_range_shrink?: SelectionRange, y_range_shrink?: SelectionRange) {}
+  updateSelectionEnd(x_end?: number, y_end?: number): [CellsSelectionEvent, CellsSelectionEvent] {
+    if (x_end == null) {
+      x_end = this.x_range.end;
+    }
+    if (y_end == null) {
+      y_end = this.y_range.end;
+    }
+    const new_x_range = new SelectionRange(this.x_range.start, x_end);
+    const new_y_range = new SelectionRange(this.y_range.start, y_end);
+    const [delta_x, x_op] = this.x_range.getForwardDelta(new_x_range);
+    const [delta_y, y_op] = this.y_range.getForwardDelta(new_y_range);
+    const x_event: CellsSelectionEvent = {
+      selection_type: SelectionType.CELLS,
+      operation: x_op,
+      x_range: new_x_range,
+      y_range: this.y_range,
+      delta_x_range: delta_x,
+      delta_y_range: SelectionRange.Noop(),
+    };
+    const y_event: CellsSelectionEvent = {
+      selection_type: SelectionType.CELLS,
+      operation: y_op,
+      x_range: new_x_range,
+      y_range: new_y_range,
+      delta_x_range: SelectionRange.Noop(),
+      delta_y_range: delta_y,
+    };
+    return [x_event, y_event];
+  }
 }
 
-type RowsSelectionEvent =
-  | {
-      selection_type: SelectionType.ROWS;
-      operation: "add" | "remove";
-      y_range: SelectionRange;
-      delta_y_range: SelectionRange;
-    }
-  | {
-      selection_type: SelectionType.ROWS;
-      operation: "set";
-      y_range: SelectionRange;
-      delta_y_range?: never;
-    };
+type RowsSelectionEvent = {
+  selection_type: SelectionType.ROWS;
+  operation: SelectionOperation;
+  y_range: SelectionRange;
+  delta_y_range: SelectionRange;
+};
 
 class RowSelectionManager {
   selection_start_cell: HTMLTableCellElement;
@@ -185,27 +214,34 @@ class RowSelectionManager {
       operation: "set",
       selection_type: SelectionType.ROWS,
       y_range: this.y_range,
+      delta_y_range: SelectionRange.Noop(),
     };
   }
 
   contains(y) {
     return this.y_range.contains(y);
   }
+
+  updateSelectionEnd(y_end: number): RowsSelectionEvent {
+    const new_y_range = new SelectionRange(this.y_range.start, y_end);
+    const [delta_y, y_op] = this.y_range.getForwardDelta(new_y_range);
+
+    const y_event: RowsSelectionEvent = {
+      selection_type: SelectionType.ROWS,
+      operation: y_op,
+      y_range: new_y_range,
+      delta_y_range: delta_y,
+    };
+    return y_event;
+  }
 }
 
-type ColumnsSelectionEvent =
-  | {
-      selection_type: SelectionType.COLS;
-      operation: "add" | "remove";
-      x_range: SelectionRange;
-      delta_x_range: SelectionRange;
-    }
-  | {
-      selection_type: SelectionType.COLS;
-      operation: "set";
-      x_range: SelectionRange;
-      delta_x_range?: never;
-    };
+type ColumnsSelectionEvent = {
+  selection_type: SelectionType.COLS;
+  operation: SelectionOperation;
+  x_range: SelectionRange;
+  delta_x_range: SelectionRange;
+};
 
 class ColumnSelectionManager {
   selection_start_cell: HTMLTableCellElement;
@@ -227,21 +263,25 @@ class ColumnSelectionManager {
       operation: "set",
       selection_type: SelectionType.COLS,
       x_range: this.x_range,
+      delta_x_range: SelectionRange.Noop(),
     };
   }
 
   contains(x) {
     return this.x_range.contains(x);
   }
-}
 
-function getCellType(elem: HTMLTableCellElement) {
-  if (elem.hasAttribute("data-header-cell")) {
-    return CellType.HEADER;
-  } else if (elem.hasAttribute("data-index-cell")) {
-    return CellType.INDEX;
+  updateSelectionEnd(x_end: number): ColumnsSelectionEvent {
+    const new_x_range = new SelectionRange(this.x_range.start, x_end);
+    const [delta_x, x_op] = this.x_range.getForwardDelta(new_x_range);
+    const x_event: ColumnsSelectionEvent = {
+      selection_type: SelectionType.COLS,
+      operation: x_op,
+      x_range: new_x_range,
+      delta_x_range: delta_x,
+    };
+    return x_event;
   }
-  return CellType.DATA;
 }
 
 export {

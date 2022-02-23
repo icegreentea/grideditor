@@ -11,6 +11,21 @@ function getLogicalCell(
   );
 }
 
+function getCellType(elem: HTMLTableCellElement) {
+  if (elem.hasAttribute("data-header-cell")) {
+    return CellType.HEADER;
+  } else if (elem.hasAttribute("data-index-cell")) {
+    return CellType.INDEX;
+  }
+  return CellType.DATA;
+}
+
+enum CellType {
+  DATA,
+  INDEX,
+  HEADER,
+}
+
 function getGridCell(
   table_element: HTMLTableElement,
   grid_x: number,
@@ -44,6 +59,19 @@ function getLogicalCoord(element): [XCoord, YCoord] {
   ];
 }
 
+function getNearestLogicalCoord(element) {
+  switch (getCellType(element)) {
+    case CellType.DATA:
+      return getLogicalCoord(element);
+    case CellType.HEADER:
+      return [getLogicalX(element), 0];
+    case CellType.INDEX:
+      return [0, getLogicalY(element)];
+    default:
+      return [0, 0];
+  }
+}
+
 declare global {
   interface Element {
     setAttribute(name: string, value: boolean): void;
@@ -59,4 +87,7 @@ export {
   clampedIncrement,
   getLogicalX,
   getLogicalY,
+  getCellType,
+  CellType,
+  getNearestLogicalCoord,
 };

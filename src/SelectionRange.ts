@@ -1,14 +1,67 @@
 class SelectionRange {
   readonly low: number;
   readonly high: number;
+  readonly start: number;
+  readonly end: number;
 
-  constructor(a, b) {
-    if (a > b) {
-      this.high = a;
-      this.low = b;
+  get isNoop() {
+    return this.start == null && this.end == null;
+  }
+
+  static Noop(): SelectionRange {
+    return new SelectionRange(null, null);
+  }
+
+  constructor(start?: number, end?: number) {
+    if (start > end) {
+      this.high = start;
+      this.low = end;
     } else {
-      this.low = a;
-      this.high = b;
+      this.low = start;
+      this.high = end;
+    }
+    this.start = start;
+    this.end = end;
+    if ((start == null && end != null) || (start != null && end == null)) {
+      throw new Error();
+    }
+  }
+
+  getForwardDelta(new_range: SelectionRange): [SelectionRange, "add" | "remove" | "noop"] {
+    if (this.start == new_range.start) {
+      if (this.end == new_range.end) {
+        return [null, "noop"];
+      }
+      if (this.end == this.start) {
+        // start with single wide selection
+        if (new_range.end > this.end) {
+          // extension
+          return [new SelectionRange(this.end + 1, new_range.end), "add"];
+        } else {
+          // shrink
+          return [new SelectionRange(this.end - 1, new_range.end), "remove"];
+        }
+      } else if (this.end > this.start) {
+        // positive selection
+        if (new_range.end > this.end) {
+          // extension
+          return [new SelectionRange(this.end + 1, new_range.end), "add"];
+        } else {
+          // shrink
+          return [new SelectionRange(this.end, new_range.end), "remove"];
+        }
+      } else if (this.end < this.start) {
+        // negative selection
+        if (new_range.end < this.end) {
+          // extennsion
+          return [new SelectionRange(this.end - 1, new_range.end), "add"];
+        } else {
+          // shrink
+          return [new SelectionRange(this.end, new_range.end), "remove"];
+        }
+      }
+    } else {
+      throw new Error();
     }
   }
 
