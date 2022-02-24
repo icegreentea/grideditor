@@ -237,6 +237,8 @@ class EventManager {
     document.addEventListener("keydown", (e) => this.selection_manager.onKeyDown(e));
     document.addEventListener("keyup", (e) => this.selection_manager.onKeyUp(e));
     document.addEventListener("mousemove", (e) => this.scroll_manager.onMouseMove(e));
+    document.addEventListener("mousedown", (e) => this.scroll_manager.onMouseDown(e));
+    window.addEventListener("mouseup", (e) => this.scroll_manager.onMouseUp(e));
     document.addEventListener("mousedragoffgridmove", (e: CustomEvent) =>
       this.selection_manager.onMouseDragOffGridMove(e)
     );

@@ -42,13 +42,36 @@ function _isColumnFullyVisible(view_bounds, cell_bounds) {
   return cell_bounds.left >= view_bounds.left && cell_bounds.right <= view_bounds.right;
 }
 
+type MouseState = {
+  clientX: number;
+  clientY: number;
+  x_direction: "left" | "right" | "middle";
+  y_direction: "above" | "below" | "middle";
+  buttons: number;
+};
+
 class ScrollManager {
   table_element: HTMLTableElement;
   scroll_element: HTMLDivElement;
+  timer;
+  #mousehold_active: boolean = false;
+  previous_mouse_state: MouseState;
 
   constructor(table_element, scroll_element) {
     this.table_element = table_element;
     this.scroll_element = scroll_element;
+    this.timer = setInterval(() => this.onTimerTick(), 50);
+  }
+
+  get mousehold_active() {
+    return this.#mousehold_active;
+  }
+
+  public set mousehold_active(v: boolean) {
+    if (v != this.#mousehold_active) {
+      //console.log("Scroll manager mousehold switching to", v);
+      this.#mousehold_active = v;
+    }
   }
 
   raiseMouseDragOffGridMove(ev?: MouseDragOffGridEvent) {
@@ -63,12 +86,61 @@ class ScrollManager {
     }
   }
 
-  onMouseMove(e: MouseEvent) {
-    //const { top, left, right, bottom } = this.scroll_element.getBoundingClientRect();
+  onTimerTick() {
+    let moved = false;
+    if (this.mousehold_active) {
+      if (this.previous_mouse_state.x_direction == "left") {
+        this.scrollColumnLeft();
+        moved = true;
+      }
+      if (this.previous_mouse_state.x_direction == "right") {
+        this.scrollColumnRight();
+        moved = true;
+      }
+      if (this.previous_mouse_state.y_direction == "above") {
+        this.scrollRowUp();
+        moved = true;
+      }
+      if (this.previous_mouse_state.y_direction == "below") {
+        this.scrollRowDown();
+        moved = true;
+      }
+      if (moved) {
+        this.onMouseMove(this.previous_mouse_state);
+      }
+    }
+  }
+
+  onMouseDown(e: MouseEvent) {
     const { top, left, right, bottom } = this.view_bounds;
     const { clientX: mouseX, clientY: mouseY } = e;
     if (!(mouseX < left || mouseX > right || mouseY < top || mouseY > bottom)) {
+      this.mousehold_active = true;
+    }
+  }
+
+  onMouseUp(e: MouseEvent) {
+    this.mousehold_active = false;
+  }
+
+  onMouseMove(e: MouseEvent | MouseState) {
+    //const { top, left, right, bottom } = this.scroll_element.getBoundingClientRect();
+    const { top, left, right, bottom } = this.view_bounds;
+    const { clientX: mouseX, clientY: mouseY } = e;
+    if (e.buttons == 1) {
+      this.mousehold_active = true;
+    } else {
+      this.mousehold_active = false;
+    }
+    if (!(mouseX < left || mouseX > right || mouseY < top || mouseY > bottom)) {
       // mouse is within table - we don't do anything here
+      this.previous_mouse_state = {
+        clientX: mouseX,
+        clientY: mouseY,
+        x_direction: "middle",
+        y_direction: "middle",
+        buttons: e.buttons,
+      };
       return;
     }
     let aligned_col_idx, aligned_row_idx: number;
@@ -104,6 +176,13 @@ class ScrollManager {
       y_direction: y_direction,
     };
     this.raiseMouseDragOffGridMove(ev);
+    this.previous_mouse_state = {
+      clientX: mouseX,
+      clientY: mouseY,
+      x_direction: x_direction,
+      y_direction: y_direction,
+      buttons: e.buttons,
+    };
   }
 
   get view_bounds() {
