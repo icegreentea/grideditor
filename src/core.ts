@@ -136,7 +136,6 @@ class Grid {
 
     const all_cells = table.querySelectorAll("td");
     for (const cell of all_cells) {
-      //cell.addEventListener("click", (e) => this.tableCellOnClick(e))
       cell.addEventListener("mousedown", (e) => this.selection_manager.onTableCellMouseDown(e));
       cell.addEventListener("mouseenter", (e) => this.selection_manager.onTableCellMouseEnter(e));
       //cell.addEventListener("mouseleave", (e) => this.selection_manager.onTableCellMouseLeave(e));
@@ -179,22 +178,6 @@ class Grid {
     return this.#focused_cell;
   }
 
-  tableCellOnClick(e) {
-    //const parent_table = e.target.closest("table");
-    if (e.target.hasAttribute("data-header-cell")) {
-      const all_cells = this.table_element.querySelectorAll("td");
-      for (const cell of all_cells) {
-        cell.setAttribute("data-logical-state", "neutral");
-      }
-      var col_idx = e.target.getAttribute("data-grid-x");
-      for (const cell of this.table_element.querySelectorAll(`td[data-grid-x="${col_idx}"]`)) {
-        cell.setAttribute("data-logical-state", "selected");
-      }
-    } else {
-      this.focusedCell = e.target;
-    }
-  }
-
   tableSelectionChanged(e) {
     if ("detail" in e) {
       let ev: SelectionEvent = e.detail;
@@ -228,37 +211,14 @@ class Grid {
           cell.setAttribute("data-logical-state", "selected");
         }
       }
-    } else {
-      /*
-      const selection = this.selection_manager.getCurrentSelection();
 
-      let selected_cells;
-      if (selection.selection_type == SelectionType.CELLS) {
-        selected_cells = cells.filter((cell) => {
-          const [x, y] = getLogicalCoord(cell);
-          return (
-            selection.logical_x_range[0] <= x &&
-            x <= selection.logical_x_range[1] &&
-            selection.logical_y_range[0] <= y &&
-            y <= selection.logical_y_range[1]
-          );
-        });
-      } else if (selection.selection_type == SelectionType.ROWS) {
-        selected_cells = cells.filter((cell) => {
-          const y = getLogicalY(cell);
-          return selection.logical_y_range[0] <= y && y <= selection.logical_y_range[1];
-        });
-      } else if (selection.selection_type == SelectionType.COLS) {
-        selected_cells = cells.filter((cell) => {
-          const x = getLogicalX(cell);
-          return selection.logical_x_range[0] <= x && x <= selection.logical_x_range[1];
-        });
+      if (ev.operation == "set") {
+        if (ev.selection_type == SelectionType.CELLS) {
+          this.scroll_manager.scrollColumnFullyIntoView(ev.x_range.start);
+          this.scroll_manager.scrollRowFullyIntoView(ev.y_range.start);
+        }
+      } else if (ev.operation == "add" || ev.operation == "remove") {
       }
-
-      for (const cell of selected_cells) {
-        cell.setAttribute("data-logical-state", "selected");
-      }
-      */
     }
   }
 }

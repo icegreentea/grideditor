@@ -54,7 +54,7 @@ class SelectionManager {
 
   public set mousehold_active(v: boolean) {
     if (v !== this.mousehold_active) {
-      console.log("mousehold switching to", v);
+      //console.log("mousehold switching to", v);
       this.#mousehold_active = v;
     }
   }

@@ -265,6 +265,40 @@ class ScrollManager {
     const offset = next_col.getBoundingClientRect().right - this.view_bounds.right;
     this.scroll_element.scrollBy(offset + 1, 0);
   }
+
+  scrollColumnFullyIntoView(col_idx: number) {
+    const visible_cols = this.getFullyVisibleColumnIndices().sort((a, b) => a - b);
+    if (visible_cols.includes(col_idx)) {
+      return;
+    } else {
+      if (col_idx < visible_cols[0]) {
+        for (let i = 0; i < visible_cols[0] - col_idx; i++) {
+          this.scrollColumnLeft();
+        }
+      } else {
+        for (let i = 0; i < col_idx - visible_cols.slice(-1)[0]; i++) {
+          this.scrollColumnRight();
+        }
+      }
+    }
+  }
+
+  scrollRowFullyIntoView(row_idx: number) {
+    const visible_rows = this.getFullyVisibleRowIndices().sort((a, b) => a - b);
+    if (visible_rows.includes(row_idx)) {
+      return;
+    } else {
+      if (row_idx < visible_rows[0]) {
+        for (let i = 0; i < visible_rows[0] - row_idx; i++) {
+          this.scrollRowUp();
+        }
+      } else {
+        for (let i = 0; i < row_idx - visible_rows.slice(-1)[0]; i++) {
+          this.scrollRowDown();
+        }
+      }
+    }
+  }
 }
 
 export { ScrollManager };
