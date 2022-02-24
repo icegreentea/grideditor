@@ -4,8 +4,10 @@ import {
   CellType,
   getCellType,
   getNearestLogicalCoord,
+  getGridCell,
 } from "./helper";
 import SelectionRange from "./SelectionRange";
+import { MouseDragOffGridEvent } from "./events";
 
 enum SelectionType {
   CELLS,
@@ -25,7 +27,7 @@ type SelectionOperation = "set" | "add" | "remove" | "noop";
 type SelectionEvent = CellsSelectionEvent | RowsSelectionEvent | ColumnsSelectionEvent;
 
 class SelectionManager {
-  mousehold_active = false;
+  #mousehold_active = false;
   shift_active = false;
   #table_element: HTMLTableElement = null;
   selection_start_cell: HTMLTableCellElement = null;
@@ -33,15 +35,28 @@ class SelectionManager {
   cell_selection_manager: CellSelectionManager;
   row_selection_manager: RowSelectionManager;
   column_selection_manager: ColumnSelectionManager;
+  scroll_element: HTMLDivElement;
 
   #max_x: number;
   #max_y: number;
 
-  constructor(table_element) {
+  constructor(table_element, scroll_element) {
     this.table_element = table_element;
+    this.scroll_element = scroll_element;
     this.cell_selection_manager = new CellSelectionManager();
     this.row_selection_manager = new RowSelectionManager();
     this.column_selection_manager = new ColumnSelectionManager();
+  }
+
+  get mousehold_active(): boolean {
+    return this.#mousehold_active;
+  }
+
+  public set mousehold_active(v: boolean) {
+    if (v !== this.mousehold_active) {
+      console.log("mousehold switching to", v);
+      this.#mousehold_active = v;
+    }
   }
 
   get table_element(): HTMLTableElement {
@@ -183,13 +198,44 @@ class SelectionManager {
     }
   }
 
+  onMouseDragOffGridMove(e: CustomEvent) {
+    if (!this.mousehold_active) return;
+    const ev: MouseDragOffGridEvent = e.detail;
+
+    if (this.selection_type == SelectionType.CELLS) {
+      const [x_event, y_event] = this.cell_selection_manager.updateSelectionEnd(
+        ev.aligned_column_index,
+        ev.aligned_row_index
+      );
+      this.raiseTableSelectionChanged(x_event);
+      this.raiseTableSelectionChanged(y_event);
+    } else if (this.selection_type == SelectionType.ROWS) {
+      const y_event = this.row_selection_manager.updateSelectionEnd(ev.aligned_row_index);
+      this.raiseTableSelectionChanged(y_event);
+    } else if (this.selection_type == SelectionType.COLS) {
+      const x_event = this.column_selection_manager.updateSelectionEnd(ev.aligned_column_index);
+      this.raiseTableSelectionChanged(x_event);
+    }
+  }
+
   onTableCellMouseUp(e: MouseEvent) {
     this.mousehold_active = false;
   }
 
   onTableCellMouseEnter(e: MouseEvent) {
-    const target = e.target as HTMLTableCellElement;
+    if (this.mousehold_active) {
+      if (e.buttons == 0) {
+        this.mousehold_active = false;
+      }
+    }
+    if (!this.mousehold_active) {
+      if (e.buttons == 1) {
+        this.mousehold_active = true;
+      }
+    }
     if (!this.mousehold_active) return;
+
+    const target = e.target as HTMLTableCellElement;
     const cell_type = getCellType(target);
 
     const [new_x, new_y] = getNearestLogicalCoord(target);
