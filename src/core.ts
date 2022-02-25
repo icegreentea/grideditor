@@ -51,6 +51,13 @@ class Grid {
     this.table_element.addEventListener("tableselectionchanged", (e) =>
       this.tableSelectionChanged(e)
     );
+    document.addEventListener("keydown", (e) => {
+      this.onTableKeyDown(e);
+    });
+  }
+
+  onTableKeyDown(e: KeyboardEvent) {
+    console.log(e);
   }
 
   _createTable() {
@@ -186,6 +193,7 @@ class Grid {
         const cells = Array.from(this.table_element.querySelectorAll(`td`));
         for (const cell of cells) {
           cell.setAttribute("data-logical-state", "neutral");
+          cell.classList.remove("selection-start");
         }
         if (ev.selection_type == SelectionType.CELLS) {
           selected_cells = cells.filter((cell) => {
@@ -210,6 +218,11 @@ class Grid {
         for (const cell of selected_cells) {
           cell.setAttribute("data-logical-state", "selected");
         }
+        getLogicalCell(
+          this.table_element,
+          ev.selection_start_x,
+          ev.selection_start_y
+        ).classList.add("selection-start");
       }
 
       if (ev.operation == "set") {

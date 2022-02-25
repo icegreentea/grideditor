@@ -81,6 +81,15 @@
     line-height:1em;
 }
 
+.coresheet > tbody > tr > td[class="selection-start"]
+{
+    outline: 2px solid #c00;
+    border-top:1px solid transparent;
+    border-left:1px solid transparent;
+    border-right:1px solid transparent;
+    border-bottom:1px solid transparent;
+}
+
 .coresheet > tbody > tr > td[data-logical-state="focus"],
 .coresheet > thead > tr > td[data-logical-state="focus"]
 {

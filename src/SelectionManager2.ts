@@ -5,6 +5,7 @@ import {
   getCellType,
   getNearestLogicalCoord,
   getGridCell,
+  getLogicalX,
 } from "./helper";
 import SelectionRange from "./SelectionRange";
 import { MouseDragOffGridEvent } from "./events";
@@ -261,12 +262,15 @@ type CellsSelectionEvent = {
   y_range: SelectionRange;
   delta_x_range: SelectionRange;
   delta_y_range: SelectionRange;
+  selection_start_x: number;
+  selection_start_y: number;
 };
 
 class CellSelectionManager {
-  selection_start_cell: HTMLTableCellElement = null;
   x_range: SelectionRange;
   y_range: SelectionRange;
+  selection_start_x: number;
+  selection_start_y: number;
 
   constructor() {}
 
@@ -284,7 +288,7 @@ class CellSelectionManager {
 
     this.x_range = x_range;
     this.y_range = y_range;
-    this.selection_start_cell = selection_start_cell;
+    [this.selection_start_x, this.selection_start_y] = getLogicalCoord(selection_start_cell);
     return {
       operation: "set",
       selection_type: SelectionType.CELLS,
@@ -292,6 +296,8 @@ class CellSelectionManager {
       y_range: this.y_range,
       delta_x_range: SelectionRange.Noop(),
       delta_y_range: SelectionRange.Noop(),
+      selection_start_x: this.selection_start_x,
+      selection_start_y: this.selection_start_y,
     };
   }
 
@@ -317,6 +323,8 @@ class CellSelectionManager {
       y_range: this.y_range,
       delta_x_range: delta_x,
       delta_y_range: SelectionRange.Noop(),
+      selection_start_x: this.selection_start_x,
+      selection_start_y: this.selection_start_y,
     };
     const y_event: CellsSelectionEvent = {
       selection_type: SelectionType.CELLS,
@@ -325,6 +333,8 @@ class CellSelectionManager {
       y_range: new_y_range,
       delta_x_range: SelectionRange.Noop(),
       delta_y_range: delta_y,
+      selection_start_x: this.selection_start_x,
+      selection_start_y: this.selection_start_y,
     };
     this.x_range = new_x_range;
     this.y_range = new_y_range;
@@ -365,11 +375,14 @@ type RowsSelectionEvent = {
   operation: SelectionOperation;
   y_range: SelectionRange;
   delta_y_range: SelectionRange;
+  selection_start_x: number;
+  selection_start_y: number;
 };
 
 class RowSelectionManager {
-  selection_start_cell: HTMLTableCellElement;
   y_range: SelectionRange;
+  selection_start_x: number;
+  selection_start_y: number;
 
   constructor() {}
 
@@ -382,12 +395,14 @@ class RowSelectionManager {
     }
 
     this.y_range = y_range;
-    this.selection_start_cell = selection_start_cell;
+    [this.selection_start_x, this.selection_start_y] = getLogicalCoord(selection_start_cell);
     return {
       operation: "set",
       selection_type: SelectionType.ROWS,
       y_range: this.y_range,
       delta_y_range: SelectionRange.Noop(),
+      selection_start_x: this.selection_start_x,
+      selection_start_y: this.selection_start_y,
     };
   }
 
@@ -404,6 +419,8 @@ class RowSelectionManager {
       operation: y_op,
       y_range: new_y_range,
       delta_y_range: delta_y,
+      selection_start_x: this.selection_start_x,
+      selection_start_y: this.selection_start_y,
     };
     this.y_range = new_y_range;
     return y_event;
@@ -427,11 +444,14 @@ type ColumnsSelectionEvent = {
   operation: SelectionOperation;
   x_range: SelectionRange;
   delta_x_range: SelectionRange;
+  selection_start_x: number;
+  selection_start_y: number;
 };
 
 class ColumnSelectionManager {
-  selection_start_cell: HTMLTableCellElement;
   x_range: SelectionRange;
+  selection_start_x: number;
+  selection_start_y: number;
 
   constructor() {}
 
@@ -444,12 +464,14 @@ class ColumnSelectionManager {
     }
 
     this.x_range = x_range;
-    this.selection_start_cell = selection_start_cell;
+    [this.selection_start_x, this.selection_start_y] = getLogicalCoord(selection_start_cell);
     return {
       operation: "set",
       selection_type: SelectionType.COLS,
       x_range: this.x_range,
       delta_x_range: SelectionRange.Noop(),
+      selection_start_x: this.selection_start_x,
+      selection_start_y: this.selection_start_y,
     };
   }
 
@@ -465,6 +487,8 @@ class ColumnSelectionManager {
       operation: x_op,
       x_range: new_x_range,
       delta_x_range: delta_x,
+      selection_start_x: this.selection_start_x,
+      selection_start_y: this.selection_start_y,
     };
     this.x_range = new_x_range;
     return x_event;
