@@ -25,6 +25,8 @@ type HeaderDefinition = {
   name: string;
 };
 
+type GridMode = "view" | "edit";
+
 class Grid {
   #focused_cell = null;
   #active_textarea = null;
@@ -57,7 +59,7 @@ class Grid {
   }
 
   onTableKeyDown(e: KeyboardEvent) {
-    console.log(e);
+    //console.log(e);
   }
 
   _createTable() {
@@ -188,41 +190,94 @@ class Grid {
   tableSelectionChanged(e) {
     if ("detail" in e) {
       let ev: SelectionEvent = e.detail;
-      let selected_cells: HTMLTableCellElement[];
       if (ev.operation != "noop") {
         const cells = Array.from(this.table_element.querySelectorAll(`td`));
-        for (const cell of cells) {
-          cell.setAttribute("data-logical-state", "neutral");
-          cell.classList.remove("selection-start");
-        }
-        if (ev.selection_type == SelectionType.CELLS) {
-          selected_cells = cells.filter((cell) => {
-            const [x, y] = getLogicalCoord(cell);
-            return (
-              (ev as CellsSelectionEvent).x_range.contains(x) &&
-              (ev as CellsSelectionEvent).y_range.contains(y)
-            );
-          });
-        } else if (ev.selection_type == SelectionType.ROWS) {
-          selected_cells = cells.filter((cell) => {
-            const [x, y] = getLogicalCoord(cell);
-            return (ev as RowsSelectionEvent).y_range.contains(y);
-          });
-        } else if (ev.selection_type == SelectionType.COLS) {
-          selected_cells = cells.filter((cell) => {
-            const [x, y] = getLogicalCoord(cell);
-            return (ev as ColumnsSelectionEvent).x_range.contains(x);
-          });
-        }
 
-        for (const cell of selected_cells) {
-          cell.setAttribute("data-logical-state", "selected");
+        if (ev.operation == "set") {
+          let selected_cells: HTMLTableCellElement[];
+
+          for (const cell of cells) {
+            cell.setAttribute("data-logical-state", "neutral");
+            cell.classList.remove("selection-start");
+          }
+          if (ev.selection_type == SelectionType.CELLS) {
+            selected_cells = cells.filter((cell) => {
+              const [x, y] = getLogicalCoord(cell);
+              return (
+                (ev as CellsSelectionEvent).x_range.contains(x) &&
+                (ev as CellsSelectionEvent).y_range.contains(y)
+              );
+            });
+          } else if (ev.selection_type == SelectionType.ROWS) {
+            selected_cells = cells.filter((cell) => {
+              const [x, y] = getLogicalCoord(cell);
+              return (ev as RowsSelectionEvent).y_range.contains(y);
+            });
+          } else if (ev.selection_type == SelectionType.COLS) {
+            selected_cells = cells.filter((cell) => {
+              const [x, y] = getLogicalCoord(cell);
+              return (ev as ColumnsSelectionEvent).x_range.contains(x);
+            });
+          }
+
+          for (const cell of selected_cells) {
+            cell.setAttribute("data-logical-state", "selected");
+          }
+
+          getLogicalCell(
+            this.table_element,
+            ev.selection_start_x,
+            ev.selection_start_y
+          ).classList.add("selection-start");
+        } else if (ev.operation == "add") {
+          let added_cells: HTMLTableCellElement[];
+          if (ev.selection_type == SelectionType.CELLS) {
+            added_cells = cells.filter((cell) => {
+              const [x, y] = getLogicalCoord(cell);
+              return (
+                (ev as CellsSelectionEvent).x_range.contains(x) &&
+                (ev as CellsSelectionEvent).y_range.contains(y)
+              );
+            });
+          } else if (ev.selection_type == SelectionType.ROWS) {
+            added_cells = cells.filter((cell) => {
+              const [x, y] = getLogicalCoord(cell);
+              return (ev as RowsSelectionEvent).y_range.contains(y);
+            });
+          } else if (ev.selection_type == SelectionType.COLS) {
+            added_cells = cells.filter((cell) => {
+              const [x, y] = getLogicalCoord(cell);
+              return (ev as ColumnsSelectionEvent).x_range.contains(x);
+            });
+          }
+          for (const cell of added_cells) {
+            cell.setAttribute("data-logical-state", "selected");
+          }
+        } else if (ev.operation == "remove") {
+          let deselected_cells: HTMLTableCellElement[];
+          if (ev.selection_type == SelectionType.CELLS) {
+            deselected_cells = cells.filter((cell) => {
+              const [x, y] = getLogicalCoord(cell);
+              return !(
+                (ev as CellsSelectionEvent).x_range.contains(x) &&
+                (ev as CellsSelectionEvent).y_range.contains(y)
+              );
+            });
+          } else if (ev.selection_type == SelectionType.ROWS) {
+            deselected_cells = cells.filter((cell) => {
+              const [x, y] = getLogicalCoord(cell);
+              return !(ev as RowsSelectionEvent).y_range.contains(y);
+            });
+          } else if (ev.selection_type == SelectionType.COLS) {
+            deselected_cells = cells.filter((cell) => {
+              const [x, y] = getLogicalCoord(cell);
+              return !(ev as ColumnsSelectionEvent).x_range.contains(x);
+            });
+          }
+          for (const cell of deselected_cells) {
+            cell.setAttribute("data-logical-state", "neutral");
+          }
         }
-        getLogicalCell(
-          this.table_element,
-          ev.selection_start_x,
-          ev.selection_start_y
-        ).classList.add("selection-start");
       }
 
       if (ev.operation == "set") {
