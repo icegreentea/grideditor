@@ -12,6 +12,16 @@
     
 }
 
+.right_sidebar_container {
+    background: red;
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 0;
+    height: 100%;
+    z-index: 1;
+}
+
 .coresheet_content {
     /* width: 100%; */
     overflow: scroll;

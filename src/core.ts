@@ -33,6 +33,7 @@ class Grid {
   table_element: HTMLTableElement;
   scroll_element: HTMLDivElement;
   target_element: HTMLDivElement;
+  right_sidebar_element: HTMLDivElement;
   selection_manager: SelectionManager;
   scroll_manager: ScrollManager;
   event_manager: EventManager;
@@ -62,12 +63,29 @@ class Grid {
     //console.log(e);
   }
 
+  activateRightSideBar() {
+    this.right_sidebar_element.style.width = "25%";
+    this.scroll_element.style.width = "75%";
+    //this.right_sidebar_element.style.visibility = "visible";
+  }
+
+  deactiveRightSideBar() {
+    this.right_sidebar_element.style.width = "0%";
+    this.scroll_element.style.width = "100%";
+    //this.right_sidebar_element.style.visibility = "hidden";
+  }
+
   _createTable() {
     this.target_element.classList.add("coresheet_container");
-    let inner_el = document.createElement("div");
-    inner_el.classList.add("coresheet_content");
-    this.scroll_element = inner_el;
-    this.target_element.appendChild(inner_el);
+    let right_sidebar_element = document.createElement("div");
+    right_sidebar_element.classList.add("right_sidebar_container");
+    this.right_sidebar_element = right_sidebar_element;
+    let scroller_element = document.createElement("div");
+    scroller_element.classList.add("coresheet_content");
+    this.scroll_element = scroller_element;
+    this.target_element.appendChild(scroller_element);
+    this.target_element.appendChild(right_sidebar_element);
+    scroller_element.style.background = "red";
 
     let table = document.createElement("table");
     table.classList.add("coresheet");
@@ -75,7 +93,7 @@ class Grid {
     table.setAttribute("cellspacing", 0);
     table.setAttribute("cellpadding", 0);
     this.table_element = table;
-    inner_el.appendChild(table);
+    scroller_element.appendChild(table);
 
     let colgroup = document.createElement("colgroup");
     table.appendChild(colgroup);
