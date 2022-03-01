@@ -29,10 +29,12 @@ type SelectionEvent = CellsSelectionEvent | RowsSelectionEvent | ColumnsSelectio
 
 class SelectionManager {
   #mousehold_active = false;
+  #selection_type: SelectionType;
+  #selection_enabled = true;
+
   shift_active = false;
   #table_element: HTMLTableElement = null;
   selection_start_cell: HTMLTableCellElement = null;
-  #selection_type: SelectionType;
   cell_selection_manager: CellSelectionManager;
   row_selection_manager: RowSelectionManager;
   column_selection_manager: ColumnSelectionManager;
@@ -47,6 +49,16 @@ class SelectionManager {
     this.cell_selection_manager = new CellSelectionManager();
     this.row_selection_manager = new RowSelectionManager();
     this.column_selection_manager = new ColumnSelectionManager();
+  }
+
+  get selection_enabled(): boolean {
+    return this.#selection_enabled;
+  }
+
+  public set selection_enabled(v: boolean) {
+    if (v != this.#selection_enabled) {
+      this.#selection_enabled = v;
+    }
   }
 
   get mousehold_active(): boolean {
@@ -91,12 +103,15 @@ class SelectionManager {
   }
 
   onKeyUp(e: KeyboardEvent) {
+    if (!this.selection_enabled) return;
     if (!e.shiftKey) {
       this.shift_active = false;
     }
   }
 
   onKeyDown(e: KeyboardEvent) {
+    if (!this.selection_enabled) return;
+
     if (this.selection_start_cell === null) {
       return;
     }
@@ -158,6 +173,8 @@ class SelectionManager {
   }
 
   onTableCellMouseDown(e: MouseEvent) {
+    if (!this.selection_enabled) return;
+
     if (this.mousehold_active) {
       this.deactivate();
       return;
@@ -200,6 +217,8 @@ class SelectionManager {
   }
 
   onMouseDragOffGridMove(e: CustomEvent) {
+    if (!this.selection_enabled) return;
+
     if (!this.mousehold_active) return;
     const ev: MouseDragOffGridEvent = e.detail;
 
@@ -220,10 +239,14 @@ class SelectionManager {
   }
 
   onTableCellMouseUp(e: MouseEvent) {
+    if (!this.selection_enabled) return;
+
     this.mousehold_active = false;
   }
 
   onTableCellMouseEnter(e: MouseEvent) {
+    if (!this.selection_enabled) return;
+
     if (this.mousehold_active) {
       if (e.buttons == 0) {
         this.mousehold_active = false;

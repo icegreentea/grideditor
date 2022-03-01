@@ -12,6 +12,20 @@
     
 }
 
+#vertical_container {
+    display: flex;
+    flex-direction: column;
+}
+
+#topbar_container {
+
+}
+
+#bottombar_container {
+
+}
+
+
 .right_sidebar_container {
     background: red;
     position: fixed;
@@ -22,7 +36,7 @@
     z-index: 1;
 }
 
-.coresheet_content {
+.coresheet_scroller {
     /* width: 100%; */
     overflow: scroll;
     height: 100%;
@@ -98,6 +112,19 @@
     border-left:1px solid transparent;
     border-right:1px solid transparent;
     border-bottom:1px solid transparent;
+}
+
+.coresheet > tbody > tr > td > input 
+{
+    border: 0px;
+    border-radius: 0px;
+    outline: 0px;
+    width: 100%;
+    margin: 0px;
+    padding: 0px;
+    padding-right: 2px;
+    background-color: transparent;
+    box-sizing: border-box;
 }
 
 .coresheet > tbody > tr > td[data-logical-state="focus"],

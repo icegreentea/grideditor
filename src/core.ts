@@ -39,6 +39,7 @@ class Grid {
   event_manager: EventManager;
   header_data: HeaderDefinition[];
   data: object[];
+  #grid_mode: GridMode = "view";
 
   constructor(element: HTMLDivElement, header_data: HeaderDefinition[], data: object[]) {
     this.target_element = element;
@@ -59,8 +60,42 @@ class Grid {
     });
   }
 
+  get grid_mode() {
+    return this.#grid_mode;
+  }
+
+  public set grid_mode(v: GridMode) {
+    if (v != this.grid_mode) {
+      console.log("Mode:", v);
+      this.#grid_mode = v;
+      if (this.grid_mode == "view") {
+        this.selection_manager.selection_enabled = true;
+      } else if (this.grid_mode == "edit") {
+        this.selection_manager.selection_enabled = false;
+      }
+    }
+  }
+
   onTableKeyDown(e: KeyboardEvent) {
-    //console.log(e);
+    if (this.grid_mode == "edit") {
+      if (e.key == "Enter") {
+      } else if (e.key == "Escape") {
+        this.grid_mode = "view";
+        const [x, y] = getLogicalCoord(this.selection_manager.selection_start_cell);
+        this.disableEdit(x, y);
+        //this.selection_manager.selection_enabled = true;
+      }
+    } else if (this.grid_mode == "view") {
+      if (this.selection_manager.selection_start_cell != null) {
+        if (e.key == "Enter") {
+          this.grid_mode = "edit";
+          //this.selection_manager.selection_enabled = false;
+          const [x, y] = getLogicalCoord(this.selection_manager.selection_start_cell);
+          this.enableEdit(x, y);
+        } else if (e.key == "Escape") {
+        }
+      }
+    }
   }
 
   activateRightSideBar() {
@@ -75,13 +110,45 @@ class Grid {
     //this.right_sidebar_element.style.visibility = "hidden";
   }
 
+  enableEdit(logical_x, logical_y) {
+    const cell = getLogicalCell(this.table_element, logical_x, logical_y);
+    const original_content = cell.textContent;
+    const editor = document.createElement("textarea");
+    editor.value = cell.innerText;
+    cell.innerHTML = null;
+    cell.appendChild(editor);
+    editor.focus();
+  }
+
+  disableEdit(logical_x, logical_y) {
+    const cell = getLogicalCell(this.table_element, logical_x, logical_y);
+    const editor = cell.querySelector("textarea");
+    cell.removeChild(editor);
+    cell.innerHTML = editor.value;
+  }
+
   _createTable() {
+    /*
+      <div id="coresheet_container">
+        <div id="vertical_container">
+          <div id="topbar_container"/>
+          <div class="main_container">
+            <div class="coresheet_scroller"/>
+            <div class=""
+          </div>
+          <div id="bottombar_container"/>
+        </div>
+      </div>
+
+    */
     this.target_element.classList.add("coresheet_container");
+    //let vertical_container = document.createElement("div");
+
     let right_sidebar_element = document.createElement("div");
     right_sidebar_element.classList.add("right_sidebar_container");
     this.right_sidebar_element = right_sidebar_element;
     let scroller_element = document.createElement("div");
-    scroller_element.classList.add("coresheet_content");
+    scroller_element.classList.add("coresheet_scroller");
     this.scroll_element = scroller_element;
     this.target_element.appendChild(scroller_element);
     this.target_element.appendChild(right_sidebar_element);
