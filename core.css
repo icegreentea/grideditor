@@ -138,3 +138,19 @@
 {
     background-color: salmon;
 }
+
+
+.column-resize-handle {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;    
+    width: 3px;
+    background: black;
+    cursor: col-resize;
+    opacity: 0.10;
+}
+
+.column-resize-handle:hover {
+    opacity: 0.5;
+}

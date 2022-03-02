@@ -70,3 +70,7 @@ npx --node-options="--inspect-brk" jest -t "Test step size and clamping together
 # Typescript and HTML Stuff
 
 * https://freshman.tech/snippets/typescript/fix-value-not-exist-eventtarget/
+
+# Resizeable Column Note:
+
+https://webdevtrick.com/resizable-table-columns/

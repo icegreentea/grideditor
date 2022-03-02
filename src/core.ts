@@ -186,14 +186,18 @@ class Grid {
      */
     for (const [idx, header_elem] of this.header_data.entries()) {
       let _el = document.createElement("td");
+      let resize_element = document.createElement("span");
+      resize_element.classList.add("column-resize-handle");
       _el.setAttribute("data-grid-y", 0);
       _el.setAttribute("data-grid-x", idx + SPACER_COLS);
       _el.setAttribute("data-logical-x", idx);
       _el.setAttribute("data-header-cell", "");
       _el.textContent = header_elem["name"];
+      _el.appendChild(resize_element);
       header_row.appendChild(_el);
       column_order.push(header_elem["name"]);
       let col = document.createElement("col");
+      col.setAttribute("data-logical-x", idx);
       col.style.width = "100px";
       //col.setAttribute("width", 100);
       colgroup.appendChild(col);
@@ -230,7 +234,8 @@ class Grid {
 
     const all_cells = table.querySelectorAll("td");
     for (const cell of all_cells) {
-      cell.addEventListener("mousedown", (e) => this.selection_manager.onTableCellMouseDown(e));
+      //cell.addEventListener("mousedown", (e) => this.selection_manager.onTableCellMouseDown(e));
+      cell.addEventListener("mousedown", (e) => this.event_manager.onTableCellMouseDown(e));
       cell.addEventListener("mouseenter", (e) => this.selection_manager.onTableCellMouseEnter(e));
       //cell.addEventListener("mouseleave", (e) => this.selection_manager.onTableCellMouseLeave(e));
       cell.addEventListener("mouseup", (e) => this.selection_manager.onTableCellMouseUp(e));
@@ -395,6 +400,15 @@ class EventManager {
     document.addEventListener("mousedragoffgridmove", (e: CustomEvent) =>
       this.selection_manager.onMouseDragOffGridMove(e)
     );
+  }
+
+  onTableCellMouseDown(e) {
+    if (e.target.classList.contains("column-resize-handle")) {
+      this.scroll_manager.initializeColumnResize(e);
+    } else if (e.target.classList.contains("row-resize-handle")) {
+    } else {
+      this.selection_manager.onTableCellMouseDown(e);
+    }
   }
 }
 

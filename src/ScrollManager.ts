@@ -56,6 +56,8 @@ class ScrollManager {
   timer;
   #mousehold_active: boolean = false;
   previous_mouse_state: MouseState;
+  column_resize_active = false;
+  column_being_resized: HTMLElement;
 
   constructor(table_element, scroll_element) {
     this.table_element = table_element;
@@ -121,12 +123,26 @@ class ScrollManager {
 
   onMouseUp(e: MouseEvent) {
     this.mousehold_active = false;
+    if (this.column_resize_active) {
+      this.column_resize_active = false;
+      this.column_being_resized = null;
+    }
   }
 
   onMouseMove(e: MouseEvent | MouseState) {
     //const { top, left, right, bottom } = this.scroll_element.getBoundingClientRect();
     const { top, left, right, bottom } = this.view_bounds;
     const { clientX: mouseX, clientY: mouseY } = e;
+    if (this.column_resize_active) {
+      let scrollOffset = document.documentElement.scrollLeft;
+      const width = scrollOffset + e.clientX - this.column_being_resized.offsetLeft;
+      const target_x = getLogicalX(this.column_being_resized);
+      const col: HTMLTableColElement = this.table_element.querySelector(
+        `col[data-logical-x="${target_x}"]`
+      );
+      col.style.width = `${width}px`;
+      return;
+    }
     if (e.buttons == 1) {
       this.mousehold_active = true;
     } else {
@@ -377,6 +393,11 @@ class ScrollManager {
         }
       }
     }
+  }
+
+  initializeColumnResize(e) {
+    this.column_being_resized = e.target.parentNode;
+    this.column_resize_active = true;
   }
 }
 
