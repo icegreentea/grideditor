@@ -58,6 +58,8 @@ class ScrollManager {
   previous_mouse_state: MouseState;
   column_resize_active = false;
   column_being_resized: HTMLElement;
+  row_resize_active = false;
+  row_being_resized: HTMLElement;
 
   constructor(table_element, scroll_element) {
     this.table_element = table_element;
@@ -127,6 +129,10 @@ class ScrollManager {
       this.column_resize_active = false;
       this.column_being_resized = null;
     }
+    if (this.row_resize_active) {
+      this.row_resize_active = false;
+      this.row_being_resized = null;
+    }
   }
 
   onMouseMove(e: MouseEvent | MouseState) {
@@ -141,6 +147,14 @@ class ScrollManager {
         `col[data-logical-x="${target_x}"]`
       );
       col.style.width = `${width}px`;
+      return;
+    }
+    if (this.row_resize_active) {
+      let scrollOffset = document.documentElement.scrollTop;
+      const height = scrollOffset + e.clientY - this.row_being_resized.offsetTop;
+      const target_y = getLogicalY(this.row_being_resized);
+      const row_header: HTMLTableCellElement = getGridCell(this.table_element, 0, target_y + 1);
+      row_header.style.height = `${height}px`;
       return;
     }
     if (e.buttons == 1) {
@@ -398,6 +412,11 @@ class ScrollManager {
   initializeColumnResize(e) {
     this.column_being_resized = e.target.parentNode;
     this.column_resize_active = true;
+  }
+
+  initializeRowResize(e) {
+    this.row_being_resized = e.target.parentNode;
+    this.row_resize_active = true;
   }
 }
 

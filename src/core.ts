@@ -169,7 +169,9 @@ class Grid {
     let header_row = document.createElement("tr");
     header_row.setAttribute("data-grid-y", 0);
     thead.appendChild(header_row);
-    colgroup.appendChild(document.createElement("col"));
+    const index_col = document.createElement("col");
+    index_col.style.width = "100px";
+    colgroup.appendChild(index_col);
 
     let spacer_el = document.createElement("td");
     spacer_el.setAttribute("data-grid-y", 0);
@@ -209,13 +211,18 @@ class Grid {
       new_row.setAttribute("data-logical-y", row_idx);
 
       /* Creating index columns */
-      let spacer_cell = document.createElement("td");
-      spacer_cell.setAttribute("data-grid-y", row_idx + SPACER_ROWS);
-      spacer_cell.setAttribute("data-logical-y", row_idx);
-      spacer_cell.setAttribute("data-grid-x", 0);
-      spacer_cell.setAttribute("data-index-cell", "");
-      spacer_cell.textContent = row_idx.toString();
-      new_row.appendChild(spacer_cell);
+      let index_cell = document.createElement("td");
+      index_cell.setAttribute("data-grid-y", row_idx + SPACER_ROWS);
+      index_cell.setAttribute("data-logical-y", row_idx);
+      index_cell.setAttribute("data-grid-x", 0);
+      index_cell.setAttribute("data-index-cell", "");
+      index_cell.textContent = row_idx.toString();
+
+      let row_resize_handle = document.createElement("div");
+      row_resize_handle.classList.add("row-resize-handle");
+      index_cell.appendChild(row_resize_handle);
+
+      new_row.appendChild(index_cell);
 
       for (const [col_idx, column_name] of column_order.entries()) {
         let new_cell = document.createElement("td");
@@ -373,6 +380,7 @@ class EventManager {
     if (e.target.classList.contains("column-resize-handle")) {
       this.scroll_manager.initializeColumnResize(e);
     } else if (e.target.classList.contains("row-resize-handle")) {
+      this.scroll_manager.initializeRowResize(e);
     } else {
       this.selection_manager.onTableCellMouseDown(e);
     }

@@ -156,3 +156,18 @@
 .column-resize-handle:hover {
     opacity: 0.5;
 }
+
+.row-resize-handle {
+    position: absolute;
+    right: 0;
+    left: 0;
+    bottom: 0;    
+    height: 3px;
+    background: black;
+    cursor: row-resize;
+    opacity: 0.10;
+}
+
+.row-resize-handle:hover {
+    opacity: 0.5;
+}
