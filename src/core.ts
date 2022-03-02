@@ -28,8 +28,6 @@ type HeaderDefinition = {
 type GridMode = "view" | "edit";
 
 class Grid {
-  #focused_cell = null;
-  #active_textarea = null;
   table_element: HTMLTableElement;
   scroll_element: HTMLDivElement;
   target_element: HTMLDivElement;
@@ -244,37 +242,6 @@ class Grid {
 
     table.setAttribute("data-logical-max-x", column_order.length);
     table.setAttribute("data-logical-max-y", this.data.length);
-  }
-
-  set focusedCell(cell_element) {
-    if (cell_element === this.#focused_cell || cell_element === this.#active_textarea) {
-      return;
-    }
-
-    const all_cells = this.table_element.querySelectorAll("td");
-    for (const cell of all_cells) {
-      cell.setAttribute("data-logical-state", "neutral");
-    }
-    if (this.#active_textarea !== null) {
-      this.#focused_cell.removeChild(this.#active_textarea);
-      this.#focused_cell.textContent = this.#active_textarea.value;
-      this.#active_textarea = null;
-    }
-
-    this.#focused_cell = cell_element;
-    if (cell_element != null) {
-      this.#focused_cell.setAttribute("data-logical-state", "focus");
-      let _text = this.#focused_cell.textContent;
-      this.#active_textarea = document.createElement("textarea");
-      this.#active_textarea.setAttribute("id", "table-active-textarea");
-      this.#active_textarea.value = _text;
-      this.#focused_cell.textContent = null;
-      this.#focused_cell.appendChild(this.#active_textarea);
-    }
-  }
-
-  get focusedCell() {
-    return this.#focused_cell;
   }
 
   tableSelectionChanged(e) {
