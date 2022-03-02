@@ -58,7 +58,7 @@
     border-bottom: 1px solid #ccc;
     user-select: none;
 
-    width: max-content;
+    width: min-content;
 
 }
 
@@ -87,6 +87,7 @@
     cursor: pointer;
     box-sizing: border-box;
     overflow: hidden;
+    white-space: nowrap;
     position: -webkit-sticky;
     position: sticky;
     top: 0;
@@ -100,6 +101,7 @@
     border-right:1px solid transparent;
     border-bottom:1px solid transparent;
     padding:4px;
+    overflow: hidden;
     white-space: nowrap;
     box-sizing: border-box;
     line-height:1em;
