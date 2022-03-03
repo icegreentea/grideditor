@@ -150,9 +150,22 @@
     width: 3px;
     background: black;
     cursor: col-resize;
-    opacity: 0.10;
+    opacity: 0.05;
 }
 
+.column-resize-trailing-handle {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 10px;
+    background-color: black;
+    cursor: col-resize;
+    opacity: 0.5;
+    display: inline-block;
+}
+
+.column-resize-trailing-handle:hover
 .column-resize-handle:hover {
     opacity: 0.5;
 }

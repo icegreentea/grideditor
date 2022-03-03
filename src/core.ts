@@ -220,7 +220,18 @@ class Grid {
       _el.setAttribute("data-grid-x", idx + SPACER_COLS);
       _el.setAttribute("data-logical-x", idx);
       _el.setAttribute("data-header-cell", "");
-      _el.textContent = header_elem["name"];
+      if (idx > 0) {
+        let trailing_resize_element = document.createElement("span");
+        trailing_resize_element.classList.add("column-resize-trailing-handle");
+        _el.appendChild(trailing_resize_element);
+      }
+
+      let _content = document.createElement("div");
+      _content.innerText = header_elem["name"];
+      _el.appendChild(_content);
+
+      //_el.appendChild(document.createTextNode(header_elem["name"]));
+      //_el.textContent = header_elem["name"];
       _el.appendChild(resize_element);
       header_row.appendChild(_el);
       column_order.push(header_elem["name"]);
