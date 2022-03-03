@@ -21,9 +21,19 @@ import {
 
 import { ScrollManager } from "./ScrollManager";
 
-type HeaderDefinition = {
+type DataDefinition = {
   name: string;
 };
+
+function parse_keys(data: object[]) {
+  let keys = new Set();
+  for (const [row_idx, row_data] of data.entries()) {
+    for (const key of Object.keys(row_data)) {
+      keys.add(key);
+    }
+  }
+  return keys;
+}
 
 type GridMode = "view" | "edit";
 
@@ -35,13 +45,13 @@ class Grid {
   selection_manager: SelectionManager;
   scroll_manager: ScrollManager;
   event_manager: EventManager;
-  header_data: HeaderDefinition[];
+  data_definition: DataDefinition[];
   data: object[];
   #grid_mode: GridMode = "view";
 
-  constructor(element: HTMLDivElement, header_data: HeaderDefinition[], data: object[]) {
+  constructor(element: HTMLDivElement, header_data: DataDefinition[], data: object[]) {
     this.target_element = element;
-    this.header_data = header_data;
+    this.data_definition = header_data;
     this.data = data;
 
     this._createTable();
@@ -56,6 +66,13 @@ class Grid {
     document.addEventListener("keydown", (e) => {
       this.onTableKeyDown(e);
     });
+  }
+
+  updateUnderlyingData(cell: HTMLTableCellElement, new_value: string) {
+    const [logical_x, logical_y] = getLogicalCoord(cell);
+    const key = this.data_definition[logical_x];
+    this.data[logical_y][key.name] = new_value;
+    cell.innerHTML = new_value;
   }
 
   get grid_mode() {
@@ -122,7 +139,8 @@ class Grid {
     const cell = getLogicalCell(this.table_element, logical_x, logical_y);
     const editor = cell.querySelector("textarea");
     cell.removeChild(editor);
-    cell.innerHTML = editor.value;
+    this.updateUnderlyingData(cell, editor.value);
+    //cell.innerHTML = editor.value;
   }
 
   _createTable() {
@@ -184,7 +202,7 @@ class Grid {
 
     /* Creating headers
      */
-    for (const [idx, header_elem] of this.header_data.entries()) {
+    for (const [idx, header_elem] of this.data_definition.entries()) {
       let _el = document.createElement("td");
       let resize_element = document.createElement("span");
       resize_element.classList.add("column-resize-handle");
