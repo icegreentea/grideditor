@@ -1,3 +1,7 @@
+:root {
+    --col-resize-dragzone-semiwidth: 5px;
+}
+
 .coresheet_container {
     display: inline-block;
     padding-right: 2px;
@@ -141,16 +145,19 @@
     background-color: salmon;
 }
 
+.column-header {
+    margin-left: var(--col-resize-dragzone-semiwidth);
+}
 
 .column-resize-handle {
     position: absolute;
     right: 0;
     top: 0;
     bottom: 0;    
-    width: 3px;
+    width: var(--col-resize-dragzone-semiwidth);
     background: black;
     cursor: col-resize;
-    opacity: 0.05;
+    opacity: 0.5;
 }
 
 .column-resize-trailing-handle {
@@ -158,7 +165,7 @@
     left: 0;
     top: 0;
     bottom: 0;
-    width: 10px;
+    width: var(--col-resize-dragzone-semiwidth);
     background-color: black;
     cursor: col-resize;
     opacity: 0.5;

@@ -227,6 +227,7 @@ class Grid {
       }
 
       let _content = document.createElement("div");
+      _content.classList.add("column-header");
       _content.innerText = header_elem["name"];
       _el.appendChild(_content);
 
