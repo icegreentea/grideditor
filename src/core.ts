@@ -21,8 +21,11 @@ import {
 
 import { ScrollManager } from "./ScrollManager";
 
+type DataType = "string" | "number" | "integer";
+
 type DataDefinition = {
   name: string;
+  //type: DataType;
 };
 
 function parse_keys(data: object[]) {
@@ -75,6 +78,12 @@ class Grid {
     cell.innerHTML = new_value;
   }
 
+  getUnderlyingData(cell: HTMLTableCellElement) {
+    const [logical_x, logical_y] = getLogicalCoord(cell);
+    const key = this.data_definition[logical_x];
+    return this.data[logical_y][key.name];
+  }
+
   get grid_mode() {
     return this.#grid_mode;
   }
@@ -107,6 +116,7 @@ class Grid {
           //this.selection_manager.selection_enabled = false;
           const [x, y] = getLogicalCoord(this.selection_manager.selection_start_cell);
           this.enableEdit(x, y);
+          e.preventDefault();
         } else if (e.key == "Escape") {
         }
       }
@@ -129,7 +139,7 @@ class Grid {
     const cell = getLogicalCell(this.table_element, logical_x, logical_y);
     const original_content = cell.textContent;
     const editor = document.createElement("textarea");
-    editor.value = cell.innerText;
+    editor.value = `${this.getUnderlyingData(cell)}`;
     cell.innerHTML = null;
     cell.appendChild(editor);
     editor.focus();
