@@ -59,6 +59,14 @@ function getLogicalCoord(element): [XCoord, YCoord] {
   ];
 }
 
+function getGridX(element: HTMLElement): XCoord {
+  return parseInt(element.getAttribute("data-grid-x"));
+}
+
+function getGridY(element: HTMLElement): XCoord {
+  return parseInt(element.getAttribute("data-grid-y"));
+}
+
 function getNearestLogicalCoord(element) {
   switch (getCellType(element)) {
     case CellType.DATA:
@@ -90,4 +98,6 @@ export {
   getCellType,
   CellType,
   getNearestLogicalCoord,
+  getGridX,
+  getGridY,
 };

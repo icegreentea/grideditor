@@ -409,13 +409,13 @@ class ScrollManager {
     }
   }
 
-  initializeColumnResize(e) {
-    this.column_being_resized = e.target.parentNode;
+  initializeColumnResize(column_grid_idx: number) {
+    this.column_being_resized = getGridCell(this.table_element, column_grid_idx, 0);
     this.column_resize_active = true;
   }
 
-  initializeRowResize(e) {
-    this.row_being_resized = e.target.parentNode;
+  initializeRowResize(row_grid_idx: number) {
+    this.row_being_resized = getGridCell(this.table_element, 0, row_grid_idx);
     this.row_resize_active = true;
   }
 }

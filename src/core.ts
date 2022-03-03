@@ -7,6 +7,8 @@ import {
   getLogicalX,
   getLogicalY,
   CellType,
+  getGridX,
+  getGridY,
 } from "./helper";
 
 import {
@@ -256,7 +258,15 @@ class Grid {
       index_cell.setAttribute("data-logical-y", row_idx);
       index_cell.setAttribute("data-grid-x", 0);
       index_cell.setAttribute("data-index-cell", "");
-      index_cell.textContent = row_idx.toString();
+      if (row_idx > 0) {
+        let trailing_row_resize_handle = document.createElement("div");
+        trailing_row_resize_handle.classList.add("row-resize-trailing-handle");
+        index_cell.appendChild(trailing_row_resize_handle);
+      }
+
+      let index_cell_content = document.createElement("div");
+      index_cell_content.textContent = row_idx.toString();
+      index_cell.appendChild(index_cell_content);
 
       let row_resize_handle = document.createElement("div");
       row_resize_handle.classList.add("row-resize-handle");
@@ -416,13 +426,27 @@ class EventManager {
     );
   }
 
-  onTableCellMouseDown(e) {
-    if (e.target.classList.contains("column-resize-handle")) {
-      this.scroll_manager.initializeColumnResize(e);
-    } else if (e.target.classList.contains("row-resize-handle")) {
-      this.scroll_manager.initializeRowResize(e);
-    } else {
-      this.selection_manager.onTableCellMouseDown(e);
+  onTableCellMouseDown(e: MouseEvent) {
+    if (e.target instanceof Element) {
+      if (e.target.classList.contains("column-resize-handle")) {
+        this.scroll_manager.initializeColumnResize(
+          getGridX(e.target.parentNode as HTMLTableCellElement)
+        );
+      } else if (e.target.classList.contains("column-resize-trailing-handle")) {
+        this.scroll_manager.initializeColumnResize(
+          getGridX(e.target.parentNode as HTMLTableCellElement) - 1
+        );
+      } else if (e.target.classList.contains("row-resize-handle")) {
+        this.scroll_manager.initializeRowResize(
+          getGridY(e.target.parentNode as HTMLTableCellElement)
+        );
+      } else if (e.target.classList.contains("row-resize-trailing-handle")) {
+        this.scroll_manager.initializeRowResize(
+          getGridY(e.target.parentNode as HTMLTableCellElement) - 1
+        );
+      } else {
+        this.selection_manager.onTableCellMouseDown(e);
+      }
     }
   }
 }
