@@ -431,7 +431,6 @@ class EventManager {
   }
 
   onTableCellMouseMove(e: MouseEvent) {
-    //console.log(findParentTableCell(e.target));
     const table_cell = findParentTableCell(e.target);
     if (table_cell == null) return;
     if (table_cell.hasAttribute("data-header-cell")) {
@@ -513,30 +512,7 @@ class EventManager {
           }
         }
       }
-      console.log(e);
       this.selection_manager.onTableCellMouseDown(e);
-
-      /*
-      if (e.target.classList.contains("column-resize-handle")) {
-        this.scroll_manager.initializeColumnResize(
-          getGridX(e.target.parentNode as HTMLTableCellElement)
-        );
-      } else if (e.target.classList.contains("column-resize-trailing-handle")) {
-        this.scroll_manager.initializeColumnResize(
-          getGridX(e.target.parentNode as HTMLTableCellElement) - 1
-        );
-      } else if (e.target.classList.contains("row-resize-handle")) {
-        this.scroll_manager.initializeRowResize(
-          getGridY(e.target.parentNode as HTMLTableCellElement)
-        );
-      } else if (e.target.classList.contains("row-resize-trailing-handle")) {
-        this.scroll_manager.initializeRowResize(
-          getGridY(e.target.parentNode as HTMLTableCellElement) - 1
-        );
-      } else {
-        this.selection_manager.onTableCellMouseDown(e);
-      }
-      */
     }
   }
 }

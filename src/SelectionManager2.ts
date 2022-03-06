@@ -214,7 +214,6 @@ class SelectionManager {
       }
       if (ev != null) {
         this.raiseTableSelectionChanged(ev);
-        console.log(ev);
       }
     }
   }
