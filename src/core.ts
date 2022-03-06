@@ -9,6 +9,7 @@ import {
   CellType,
   getGridX,
   getGridY,
+  findParentTableCell,
 } from "./helper";
 
 import {
@@ -225,7 +226,7 @@ class Grid {
       if (idx > 0) {
         let trailing_resize_element = document.createElement("span");
         trailing_resize_element.classList.add("column-resize-trailing-handle");
-        _el.appendChild(trailing_resize_element);
+        //_el.appendChild(trailing_resize_element);
       }
 
       let _content = document.createElement("div");
@@ -235,7 +236,7 @@ class Grid {
 
       //_el.appendChild(document.createTextNode(header_elem["name"]));
       //_el.textContent = header_elem["name"];
-      _el.appendChild(resize_element);
+      //_el.appendChild(resize_element);
       header_row.appendChild(_el);
       column_order.push(header_elem["name"]);
       let col = document.createElement("col");
@@ -261,7 +262,7 @@ class Grid {
       if (row_idx > 0) {
         let trailing_row_resize_handle = document.createElement("div");
         trailing_row_resize_handle.classList.add("row-resize-trailing-handle");
-        index_cell.appendChild(trailing_row_resize_handle);
+        //index_cell.appendChild(trailing_row_resize_handle);
       }
 
       let index_cell_content = document.createElement("div");
@@ -270,7 +271,7 @@ class Grid {
 
       let row_resize_handle = document.createElement("div");
       row_resize_handle.classList.add("row-resize-handle");
-      index_cell.appendChild(row_resize_handle);
+      //index_cell.appendChild(row_resize_handle);
 
       new_row.appendChild(index_cell);
 
@@ -294,6 +295,7 @@ class Grid {
       cell.addEventListener("mouseenter", (e) => this.selection_manager.onTableCellMouseEnter(e));
       //cell.addEventListener("mouseleave", (e) => this.selection_manager.onTableCellMouseLeave(e));
       cell.addEventListener("mouseup", (e) => this.selection_manager.onTableCellMouseUp(e));
+      cell.addEventListener("mousemove", (e) => this.event_manager.onTableCellMouseMove(e));
       cell.setAttribute("data-logical-state", "neutral");
     }
 
@@ -408,6 +410,8 @@ class Grid {
 class EventManager {
   selection_manager: SelectionManager;
   scroll_manager: ScrollManager;
+  resize_enabled_focus_cell: HTMLTableCellElement;
+  resize_mode: "current" | "trailing" | null;
 
   constructor(selection_manager, scroll_manager) {
     this.selection_manager = selection_manager;
@@ -426,8 +430,93 @@ class EventManager {
     );
   }
 
+  onTableCellMouseMove(e: MouseEvent) {
+    //console.log(findParentTableCell(e.target));
+    const table_cell = findParentTableCell(e.target);
+    if (table_cell == null) return;
+    if (table_cell.hasAttribute("data-header-cell")) {
+      const { left, right } = table_cell.getBoundingClientRect();
+      let _resize_mode: "current" | "trailing" | null;
+      if (e.clientX >= left && e.clientX < left + 5) {
+        _resize_mode = "trailing";
+      } else if (e.clientX <= right && e.clientX > right - 5) {
+        _resize_mode = "current";
+      } else {
+        _resize_mode = null;
+      }
+
+      if (_resize_mode != null) {
+        if (
+          this.resize_enabled_focus_cell != null &&
+          this.resize_enabled_focus_cell != table_cell
+        ) {
+          this.resize_enabled_focus_cell.classList.remove("col-resize-enabled");
+          this.resize_enabled_focus_cell.classList.remove("row-resize-enabled");
+        }
+        table_cell.classList.add("col-resize-enabled");
+        this.resize_enabled_focus_cell = table_cell as HTMLTableCellElement;
+        this.resize_mode = _resize_mode;
+        return;
+      }
+    } else if (table_cell.hasAttribute("data-index-cell")) {
+      const { top, bottom } = table_cell.getBoundingClientRect();
+      let _resize_mode: "current" | "trailing" | null;
+      if (e.clientY >= top && e.clientY < top + 5) {
+        _resize_mode = "trailing";
+      } else if (e.clientY <= bottom && e.clientY > bottom - 5) {
+        _resize_mode = "current";
+      } else {
+        _resize_mode = null;
+      }
+
+      if (_resize_mode != null) {
+        if (
+          this.resize_enabled_focus_cell != null &&
+          this.resize_enabled_focus_cell != table_cell
+        ) {
+          this.resize_enabled_focus_cell.classList.remove("col-resize-enabled");
+          this.resize_enabled_focus_cell.classList.remove("row-resize-enabled");
+        }
+        table_cell.classList.add("row-resize-enabled");
+        this.resize_enabled_focus_cell = table_cell as HTMLTableCellElement;
+        this.resize_mode = _resize_mode;
+        return;
+      }
+    }
+    if (this.resize_enabled_focus_cell != null) {
+      this.resize_enabled_focus_cell.classList.remove("col-resize-enabled");
+      this.resize_enabled_focus_cell.classList.remove("row-resize-enabled");
+      this.resize_enabled_focus_cell = null;
+      this.resize_mode = null;
+    }
+  }
+
   onTableCellMouseDown(e: MouseEvent) {
     if (e.target instanceof Element) {
+      const table_cell = findParentTableCell(e.target);
+      if (this.resize_enabled_focus_cell && this.resize_enabled_focus_cell == table_cell) {
+        if (this.resize_enabled_focus_cell.hasAttribute("data-header-cell")) {
+          if (this.resize_mode == "current") {
+            this.scroll_manager.initializeColumnResize(getGridX(table_cell));
+            return;
+          } else if (this.resize_mode == "trailing") {
+            this.scroll_manager.initializeColumnResize(getGridX(table_cell) - 1);
+            return;
+          }
+        } else if (this.resize_enabled_focus_cell.hasAttribute("data-index-cell")) {
+          if (this.resize_mode == "current") {
+            this.scroll_manager.initializeRowResize(getGridY(table_cell));
+            return;
+          } else if (this.resize_mode == "trailing") {
+            this.scroll_manager.initializeRowResize(getGridY(table_cell) - 1);
+            return;
+          }
+        }
+      }
+      console.log(e);
+      this.selection_manager.onTableCellMouseDown(e);
+
+      /*
       if (e.target.classList.contains("column-resize-handle")) {
         this.scroll_manager.initializeColumnResize(
           getGridX(e.target.parentNode as HTMLTableCellElement)
@@ -447,6 +536,7 @@ class EventManager {
       } else {
         this.selection_manager.onTableCellMouseDown(e);
       }
+      */
     }
   }
 }

@@ -6,6 +6,7 @@ import {
   getNearestLogicalCoord,
   getGridCell,
   getLogicalX,
+  findParentTableCell,
 } from "./helper";
 import SelectionRange from "./SelectionRange";
 import { MouseDragOffGridEvent } from "./events";
@@ -179,10 +180,11 @@ class SelectionManager {
       this.deactivate();
       return;
     }
-
-    const cell_type = getCellType(e.target as HTMLTableCellElement);
+    const cell = findParentTableCell(e.target) as HTMLTableCellElement;
+    if (cell == null) return;
+    const cell_type = getCellType(cell);
     this.mousehold_active = true;
-    const [x, y] = getNearestLogicalCoord(e.target);
+    const [x, y] = getNearestLogicalCoord(cell);
     let ev: SelectionEvent;
     if (this.shift_active) {
       if (this.selection_type == SelectionType.CELLS) {
@@ -199,7 +201,7 @@ class SelectionManager {
     } else {
       if (cell_type == CellType.DATA) {
         this.selection_type = SelectionType.CELLS;
-        this.selection_start_cell = e.target as HTMLTableCellElement;
+        this.selection_start_cell = cell;
         ev = this.cell_selection_manager.setSelection(x, y, this.selection_start_cell);
       } else if (cell_type == CellType.INDEX) {
         this.selection_type = SelectionType.ROWS;
@@ -212,6 +214,7 @@ class SelectionManager {
       }
       if (ev != null) {
         this.raiseTableSelectionChanged(ev);
+        console.log(ev);
       }
     }
   }

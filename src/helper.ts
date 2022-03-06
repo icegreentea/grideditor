@@ -80,6 +80,31 @@ function getNearestLogicalCoord(element) {
   }
 }
 
+function findParent(
+  target: HTMLElement,
+  predicate: (e: HTMLElement) => boolean,
+  include_self = true
+): HTMLElement {
+  let found = false;
+  if (include_self && predicate(target)) return target;
+  while (!found) {
+    if (target.parentElement == null) return null;
+    target = target.parentElement;
+    if (predicate(target)) return target;
+  }
+  return null;
+}
+
+function findParentTableCell(target, include_self = true) {
+  return findParent(
+    target,
+    (e: HTMLElement) => {
+      return e.tagName == "TD";
+    },
+    include_self
+  );
+}
+
 declare global {
   interface Element {
     setAttribute(name: string, value: boolean): void;
@@ -100,4 +125,5 @@ export {
   getNearestLogicalCoord,
   getGridX,
   getGridY,
+  findParentTableCell,
 };

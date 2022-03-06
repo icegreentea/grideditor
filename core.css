@@ -215,3 +215,11 @@
 .row-resize-trailing-handle:hover {
     opacity: 0.5;
 }
+
+.coresheet > thead > tr > td.col-resize-enabled {
+    cursor: col-resize;
+}
+
+.coresheet > tbody > tr > td:first-child.row-resize-enabled {
+    cursor: row-resize;
+}
