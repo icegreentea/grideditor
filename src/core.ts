@@ -58,7 +58,7 @@ class TextEditor {
     const frag = new DocumentFragment();
     const _input = document.createElement("textarea");
     _input.classList.add("multiline-text-editor");
-    _input.style.width = `${this.parent_cell.clientWidth}px`;
+    //_input.style.width = `${this.parent_cell.clientWidth}px`;
     _input.value = this.initial_value;
     this.#input = _input;
     frag.appendChild(_input);

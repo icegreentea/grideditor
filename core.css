@@ -239,4 +239,6 @@
     box-sizing: border-box;
     outline: none;
     box-sizing: none;;
+    height: 100%;
+    width: 100%;
 }

@@ -5,6 +5,7 @@ import {
   getLogicalX,
   getLogicalY,
   getNearestLogicalCoord,
+  getGridRow,
 } from "./helper";
 import { MouseDragOffGridEvent } from "./events";
 
@@ -153,8 +154,12 @@ class ScrollManager {
       let scrollOffset = document.documentElement.scrollTop;
       const height = scrollOffset + e.clientY - this.row_being_resized.offsetTop;
       const target_y = getLogicalY(this.row_being_resized);
-      const row_header: HTMLTableCellElement = getGridCell(this.table_element, 0, target_y + 1);
-      row_header.style.height = `${height}px`;
+      const row = getGridRow(this.table_element, target_y + 1);
+      row.forEach((cell) => {
+        cell.style.height = `${height}px`;
+      });
+      //const row_header: HTMLTableCellElement = getGridCell(this.table_element, 0, target_y + 1);
+      //row_header.style.height = `${height}px`;
       return;
     }
     if (e.buttons == 1) {
