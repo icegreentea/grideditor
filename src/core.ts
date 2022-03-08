@@ -24,7 +24,74 @@ import {
 
 import { ScrollManager } from "./ScrollManager";
 
-type DataType = "string" | "number" | "integer";
+type DataType = "text" | "number";
+
+type Editor = "text-multi" | "text-single";
+
+class TextView {}
+
+class NumberView {}
+
+class TextEditor {
+  initial_value: string;
+  fragment: DocumentFragment;
+  parent_cell: HTMLTableCellElement;
+  #input;
+  constructor(initial_value, parent_cell) {
+    if (initial_value == null) initial_value = "";
+    this.parent_cell = parent_cell;
+    this.initial_value = initial_value;
+    this.render();
+  }
+
+  check() {}
+
+  getEditorValue() {
+    return this.#input.value;
+  }
+
+  focus() {
+    this.#input.focus();
+  }
+
+  render(): DocumentFragment {
+    const frag = new DocumentFragment();
+    const _input = document.createElement("textarea");
+    _input.classList.add("multiline-text-editor");
+    _input.style.width = `${this.parent_cell.clientWidth}px`;
+    _input.value = this.initial_value;
+    this.#input = _input;
+    frag.appendChild(_input);
+    this.fragment = frag;
+    return frag;
+  }
+}
+
+class NumberEditor {
+  initial_value: number;
+  fragment: DocumentFragment;
+  #input;
+  constructor(initial_value) {
+    this.initial_value = initial_value;
+  }
+
+  check() {}
+
+  getEditorValue() {
+    return parseFloat(this.#input.value);
+  }
+
+  render(): DocumentFragment {
+    const frag = new DocumentFragment();
+    const _input = document.createElement("input");
+    _input.type = "text";
+    _input.value = this.initial_value.toString();
+    this.#input = _input;
+    frag.appendChild(_input);
+    this.fragment = frag;
+    return frag;
+  }
+}
 
 type DataDefinition = {
   name: string;
@@ -53,6 +120,7 @@ class Grid {
   event_manager: EventManager;
   data_definition: DataDefinition[];
   data: object[];
+  active_editor;
   #grid_mode: GridMode = "view";
 
   constructor(element: HTMLDivElement, header_data: DataDefinition[], data: object[]) {
@@ -140,19 +208,28 @@ class Grid {
 
   enableEdit(logical_x, logical_y) {
     const cell = getLogicalCell(this.table_element, logical_x, logical_y);
+    cell.classList.add("cell-editor-enabled");
     const original_content = cell.textContent;
-    const editor = document.createElement("textarea");
-    editor.value = `${this.getUnderlyingData(cell)}`;
+    const editor = new TextEditor(this.getUnderlyingData(cell), cell);
+    this.active_editor = editor;
+    //const editor = document.createElement("textarea");
+    //editor.value = `${this.getUnderlyingData(cell)}`;
     cell.innerHTML = null;
-    cell.appendChild(editor);
+    cell.appendChild(editor.fragment);
     editor.focus();
   }
 
   disableEdit(logical_x, logical_y) {
-    const cell = getLogicalCell(this.table_element, logical_x, logical_y);
-    const editor = cell.querySelector("textarea");
-    cell.removeChild(editor);
-    this.updateUnderlyingData(cell, editor.value);
+    //const cell = getLogicalCell(this.table_element, logical_x, logical_y);
+    //const editor = cell.querySelector("textarea");
+    //cell.removeChild(editor);
+    const cell = this.active_editor.parent_cell;
+    cell.innerHTML = null;
+    this.updateUnderlyingData(cell, this.active_editor.getEditorValue());
+    cell.innerHTML = this.active_editor.getEditorValue();
+    cell.classList.remove("cell-editor-enabled");
+    this.active_editor = null;
+    //this.updateUnderlyingData(cell, editor.value);
     //cell.innerHTML = editor.value;
   }
 

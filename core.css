@@ -1,6 +1,8 @@
 :root {
     --col-resize-dragzone-semiwidth: 5px;
     --row-resize-dragzone-semiheight: 3px;
+    --selection-background: rgba(0, 0, 255, 0.10);
+    --initial-selection-border-color: rgba(0,0,255,0.75);
 }
 
 .coresheet_container {
@@ -114,11 +116,16 @@
 
 .coresheet > tbody > tr > td[class="selection-start"]
 {
-    outline: 2px solid #c00;
+    outline: 2px solid var(--initial-selection-border-color);
     border-top:1px solid transparent;
     border-left:1px solid transparent;
     border-right:1px solid transparent;
     border-bottom:1px solid transparent;
+}
+
+.coresheet > tbody > tr > td.cell-editor-enabled
+{
+    padding: 0px;
 }
 
 .coresheet > tbody > tr > td > input 
@@ -143,7 +150,7 @@
 .coresheet > tbody > tr > td[data-logical-state="selected"],
 .coresheet > thead > tr > td[data-logical-state="selected"]
 {
-    background-color: salmon;
+    background-color: var(--selection-background);
 }
 
 .column-header {
@@ -222,4 +229,14 @@
 
 .coresheet > tbody > tr > td:first-child.row-resize-enabled {
     cursor: row-resize;
+}
+
+.coresheet > tbody > tr > td > textarea.multiline-text-editor {
+    resize: none;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    box-sizing: border-box;
+    outline: none;
+    box-sizing: none;;
 }
