@@ -14,6 +14,7 @@ import {
   getGridCol,
   checkTextWidth,
   getGridRow,
+  getCellType,
 } from "./helper";
 
 import {
@@ -32,7 +33,41 @@ type DataType = "text" | "number";
 
 type Editor = "text-multi" | "text-single";
 
-class TextView {}
+class TextView {
+  input_value: any;
+  display_value: string;
+  value: string;
+  parent_cell: HTMLTableCellElement;
+  fragment: DocumentFragment;
+  constructor(value, parent_cell) {
+    this.input_value = value;
+    if (value == null) {
+      this.display_value = "";
+    } else if (typeof value == "string") {
+      this.display_value = value;
+    } else {
+      this.display_value = `${value}`;
+    }
+    this.parent_cell = parent_cell;
+    this.render();
+  }
+
+  getFragment() {
+    return this.fragment;
+  }
+
+  render(): DocumentFragment {
+    const frag = new DocumentFragment();
+    this.display_value.split(/\r?\n/).forEach((line) => {
+      const span = document.createElement("span");
+      span.innerText = line;
+      frag.appendChild(span);
+      frag.appendChild(document.createElement("br"));
+    });
+    this.fragment = frag;
+    return frag;
+  }
+}
 
 class NumberView {}
 
@@ -228,17 +263,14 @@ class Grid {
   }
 
   disableEdit(logical_x, logical_y) {
-    //const cell = getLogicalCell(this.table_element, logical_x, logical_y);
-    //const editor = cell.querySelector("textarea");
-    //cell.removeChild(editor);
     const cell = this.active_editor.parent_cell;
-    cell.innerHTML = null;
     this.updateUnderlyingData(cell, this.active_editor.getEditorValue());
-    cell.innerHTML = this.active_editor.getEditorValue();
+    const view = new TextView(this.active_editor.getEditorValue(), cell);
+    cell.innerHTML = null;
+    cell.appendChild(view.getFragment());
+    //cell.innerHTML = this.active_editor.getEditorValue();
     cell.classList.remove("cell-editor-enabled");
     this.active_editor = null;
-    //this.updateUnderlyingData(cell, editor.value);
-    //cell.innerHTML = editor.value;
   }
 
   _createTable() {
@@ -368,7 +400,10 @@ class Grid {
         new_cell.setAttribute("data-grid-x", col_idx + SPACER_COLS);
         new_cell.setAttribute("data-logical-x", col_idx);
         new_cell.setAttribute("data-cell-type", "data");
-        new_cell.textContent = data_row[column_name];
+        //new_cell.textContent = data_row[column_name];
+        const view = new TextView(data_row[column_name], new_cell);
+        new_cell.innerHTML = null;
+        new_cell.appendChild(view.getFragment());
         new_row.appendChild(new_cell);
       }
       body.appendChild(new_row);
@@ -540,7 +575,7 @@ class EventManager {
 
   checkColumnResizeMode(e: MouseEvent, table_cell: HTMLTableCellElement) {
     if (table_cell == null) return null;
-    if (table_cell.hasAttribute("data-header-cell")) {
+    if (getCellType(table_cell) == CellType.HEADER) {
       const { left, right } = table_cell.getBoundingClientRect();
       if (e.clientX >= left && e.clientX < left + 5) {
         return "trailing";
@@ -555,7 +590,7 @@ class EventManager {
 
   checkRowResizeMode(e: MouseEvent, table_cell: HTMLTableCellElement) {
     if (table_cell == null) return null;
-    if (table_cell.hasAttribute("data-header-cell")) {
+    if (getCellType(table_cell) == CellType.INDEX) {
       const { top, bottom } = table_cell.getBoundingClientRect();
       if (e.clientY >= top && e.clientY < top + 5) {
         return "trailing";
@@ -587,7 +622,7 @@ class EventManager {
       }
     } else if (table_cell.hasAttribute("data-index-cell")) {
       const _resize_mode = this.checkRowResizeMode(e, table_cell as HTMLTableCellElement);
-
+      console.log(_resize_mode);
       if (_resize_mode != null) {
         if (
           this.resize_enabled_focus_cell != null &&

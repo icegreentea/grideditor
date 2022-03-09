@@ -1,3 +1,15 @@
+import { HEADER_CELL_ATTR, INDEX_CELL_ATTR } from "./dom_consts";
+
+function isHeaderCell(element: HTMLElement) {
+  if (element == null) return false;
+  return element.hasAttribute(HEADER_CELL_ATTR);
+}
+
+function isIndexCell(element: HTMLElement) {
+  if (element == null) return false;
+  return element.hasAttribute(INDEX_CELL_ATTR);
+}
+
 type XCoord = number;
 type YCoord = number;
 
