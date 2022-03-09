@@ -128,6 +128,19 @@ declare global {
   }
 }
 
+function checkTextWidth(text: string, font = null) {
+  const canvas =
+    checkTextWidth.canvas || (checkTextWidth.canvas = document.createElement("canvas"));
+  const context = canvas.getContext("2d");
+  if (font != null) {
+    context.font = font;
+  }
+  const widths = text.split(/\r?\n/).map((line) => {
+    return context.measureText(line).width;
+  });
+  return Math.max(...widths);
+}
+
 export {
   getLogicalCell,
   getLogicalCoord,
@@ -146,4 +159,5 @@ export {
   isCellHeightOverflow,
   isCellWidthOverflow,
   getGridCol,
+  checkTextWidth,
 };

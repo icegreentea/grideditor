@@ -12,6 +12,8 @@ import {
   findParentTableCell,
   isCellWidthOverflow,
   getGridCol,
+  checkTextWidth,
+  getGridRow,
 } from "./helper";
 
 import {
@@ -324,6 +326,7 @@ class Grid {
       column_order.push(header_elem["name"]);
       let col = document.createElement("col");
       col.setAttribute("data-logical-x", idx);
+      col.setAttribute("data-grid-x", idx + SPACER_COLS);
       col.style.width = "100px";
       //col.setAttribute("width", 100);
       colgroup.appendChild(col);
@@ -535,20 +538,40 @@ class EventManager {
     }
   }
 
+  checkColumnResizeMode(e: MouseEvent, table_cell: HTMLTableCellElement) {
+    if (table_cell == null) return null;
+    if (table_cell.hasAttribute("data-header-cell")) {
+      const { left, right } = table_cell.getBoundingClientRect();
+      if (e.clientX >= left && e.clientX < left + 5) {
+        return "trailing";
+      } else if (e.clientX <= right && e.clientX > right - 5) {
+        return "current";
+      } else {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  checkRowResizeMode(e: MouseEvent, table_cell: HTMLTableCellElement) {
+    if (table_cell == null) return null;
+    if (table_cell.hasAttribute("data-header-cell")) {
+      const { top, bottom } = table_cell.getBoundingClientRect();
+      if (e.clientY >= top && e.clientY < top + 5) {
+        return "trailing";
+      } else if (e.clientY <= bottom && e.clientY > bottom - 5) {
+        return "current";
+      } else {
+        return null;
+      }
+    }
+    return null;
+  }
   onTableCellMouseMove(e: MouseEvent) {
     const table_cell = findParentTableCell(e.target);
     if (table_cell == null) return;
     if (table_cell.hasAttribute("data-header-cell")) {
-      const { left, right } = table_cell.getBoundingClientRect();
-      let _resize_mode: "current" | "trailing" | null;
-      if (e.clientX >= left && e.clientX < left + 5) {
-        _resize_mode = "trailing";
-      } else if (e.clientX <= right && e.clientX > right - 5) {
-        _resize_mode = "current";
-      } else {
-        _resize_mode = null;
-      }
-
+      const _resize_mode = this.checkColumnResizeMode(e, table_cell as HTMLTableCellElement);
       if (_resize_mode != null) {
         if (
           this.resize_enabled_focus_cell != null &&
@@ -563,15 +586,7 @@ class EventManager {
         return;
       }
     } else if (table_cell.hasAttribute("data-index-cell")) {
-      const { top, bottom } = table_cell.getBoundingClientRect();
-      let _resize_mode: "current" | "trailing" | null;
-      if (e.clientY >= top && e.clientY < top + 5) {
-        _resize_mode = "trailing";
-      } else if (e.clientY <= bottom && e.clientY > bottom - 5) {
-        _resize_mode = "current";
-      } else {
-        _resize_mode = null;
-      }
+      const _resize_mode = this.checkRowResizeMode(e, table_cell as HTMLTableCellElement);
 
       if (_resize_mode != null) {
         if (
@@ -599,9 +614,30 @@ class EventManager {
     if (e.target instanceof Element) {
       const table_cell = findParentTableCell(e.target);
       if (table_cell.hasAttribute("data-header-cell")) {
-        const grid_x = getGridX(table_cell);
-        const cells = getGridCol(this.table_element, grid_x);
-        console.log(Math.max(...cells.map((c) => c.scrollWidth)));
+        const _resize_mode = this.checkColumnResizeMode(e, table_cell as HTMLTableCellElement);
+        if (_resize_mode != null) {
+          let grid_x;
+          if (_resize_mode == "current") {
+            grid_x = getGridX(table_cell);
+          } else if (_resize_mode == "trailing") {
+            grid_x = getGridX(table_cell) - 1;
+          }
+          const cells = getGridCol(this.table_element, grid_x);
+          const cell_text_widths = cells.map((cell) => {
+            return checkTextWidth(
+              cell.innerText,
+              window.getComputedStyle(cell, null).getPropertyValue("font")
+            );
+          });
+          const max_width = Math.max(...cell_text_widths);
+          //const max_width = Math.max(...cells.map((c) => c.scrollWidth));
+          const col: HTMLTableColElement = this.table_element.querySelector(
+            `col[data-grid-x="${grid_x}"]`
+          );
+          col.style.width = `${max_width + 8}px`;
+        }
+      }
+      if (table_cell.hasAttribute("data-index-cell")) {
       }
       if (isCellWidthOverflow(table_cell)) {
         console.log(table_cell);
