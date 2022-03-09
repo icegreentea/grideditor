@@ -38,6 +38,10 @@ function getGridRow(table_element: HTMLTableElement, grid_y: number): HTMLTableC
   return Array.from(table_element.querySelectorAll(`td[data-grid-y="${grid_y}"]`));
 }
 
+function getGridCol(table_element: HTMLTableElement, grid_x: number): HTMLTableCellElement[] {
+  return Array.from(table_element.querySelectorAll(`td[data-grid-x="${grid_x}"]`));
+}
+
 function clampedDecrement(x: number, limit: number): number {
   if (x > limit) return x - 1;
   return x;
@@ -109,6 +113,14 @@ function findParentTableCell(target, include_self = true) {
   );
 }
 
+function isCellWidthOverflow(target: HTMLElement) {
+  return target.clientWidth < target.scrollWidth;
+}
+
+function isCellHeightOverflow(target: HTMLElement) {
+  return target.clientHeight < target.scrollHeight;
+}
+
 declare global {
   interface Element {
     setAttribute(name: string, value: boolean): void;
@@ -131,4 +143,7 @@ export {
   getGridY,
   findParentTableCell,
   getGridRow,
+  isCellHeightOverflow,
+  isCellWidthOverflow,
+  getGridCol,
 };

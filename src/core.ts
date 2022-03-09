@@ -10,6 +10,8 @@ import {
   getGridX,
   getGridY,
   findParentTableCell,
+  isCellWidthOverflow,
+  getGridCol,
 } from "./helper";
 
 import {
@@ -529,6 +531,7 @@ class EventManager {
       //cell.addEventListener("mouseleave", (e) => this.selection_manager.onTableCellMouseLeave(e));
       cell.addEventListener("mouseup", (e) => this.selection_manager.onTableCellMouseUp(e));
       cell.addEventListener("mousemove", (e) => this.onTableCellMouseMove(e));
+      cell.addEventListener("dblclick", (e) => this.onTableCellDoubleClick(e));
     }
   }
 
@@ -589,6 +592,20 @@ class EventManager {
       this.resize_enabled_focus_cell.classList.remove("row-resize-enabled");
       this.resize_enabled_focus_cell = null;
       this.resize_mode = null;
+    }
+  }
+
+  onTableCellDoubleClick(e: MouseEvent) {
+    if (e.target instanceof Element) {
+      const table_cell = findParentTableCell(e.target);
+      if (table_cell.hasAttribute("data-header-cell")) {
+        const grid_x = getGridX(table_cell);
+        const cells = getGridCol(this.table_element, grid_x);
+        console.log(Math.max(...cells.map((c) => c.scrollWidth)));
+      }
+      if (isCellWidthOverflow(table_cell)) {
+        console.log(table_cell);
+      }
     }
   }
 
