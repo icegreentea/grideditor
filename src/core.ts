@@ -132,7 +132,11 @@ class Grid {
 
     this.selection_manager = new SelectionManager(this.table_element, this.scroll_element);
     this.scroll_manager = new ScrollManager(this.table_element, this.scroll_element);
-    this.event_manager = new EventManager(this.selection_manager, this.scroll_manager);
+    this.event_manager = new EventManager(
+      this.table_element,
+      this.selection_manager,
+      this.scroll_manager
+    );
 
     this.table_element.addEventListener("tableselectionchanged", (e) =>
       this.tableSelectionChanged(e)
@@ -365,6 +369,7 @@ class Grid {
       body.appendChild(new_row);
     }
 
+    /*
     const all_cells = table.querySelectorAll("td");
     for (const cell of all_cells) {
       //cell.addEventListener("mousedown", (e) => this.selection_manager.onTableCellMouseDown(e));
@@ -373,6 +378,11 @@ class Grid {
       //cell.addEventListener("mouseleave", (e) => this.selection_manager.onTableCellMouseLeave(e));
       cell.addEventListener("mouseup", (e) => this.selection_manager.onTableCellMouseUp(e));
       cell.addEventListener("mousemove", (e) => this.event_manager.onTableCellMouseMove(e));
+      cell.setAttribute("data-logical-state", "neutral");
+    }
+    */
+    const all_cells = table.querySelectorAll("td");
+    for (const cell of all_cells) {
       cell.setAttribute("data-logical-state", "neutral");
     }
 
@@ -485,12 +495,14 @@ class Grid {
 }
 
 class EventManager {
+  table_element: HTMLTableElement;
   selection_manager: SelectionManager;
   scroll_manager: ScrollManager;
   resize_enabled_focus_cell: HTMLTableCellElement;
   resize_mode: "current" | "trailing" | null;
 
-  constructor(selection_manager, scroll_manager) {
+  constructor(table_element, selection_manager, scroll_manager) {
+    this.table_element = table_element;
     this.selection_manager = selection_manager;
     this.scroll_manager = scroll_manager;
     this._setupEventChains();
@@ -505,6 +517,19 @@ class EventManager {
     document.addEventListener("mousedragoffgridmove", (e: CustomEvent) =>
       this.selection_manager.onMouseDragOffGridMove(e)
     );
+    this._bindTableCellEvents();
+  }
+
+  _bindTableCellEvents() {
+    const all_cells = this.table_element.querySelectorAll("td");
+    for (const cell of all_cells) {
+      //cell.addEventListener("mousedown", (e) => this.selection_manager.onTableCellMouseDown(e));
+      cell.addEventListener("mousedown", (e) => this.onTableCellMouseDown(e));
+      cell.addEventListener("mouseenter", (e) => this.selection_manager.onTableCellMouseEnter(e));
+      //cell.addEventListener("mouseleave", (e) => this.selection_manager.onTableCellMouseLeave(e));
+      cell.addEventListener("mouseup", (e) => this.selection_manager.onTableCellMouseUp(e));
+      cell.addEventListener("mousemove", (e) => this.onTableCellMouseMove(e));
+    }
   }
 
   onTableCellMouseMove(e: MouseEvent) {
