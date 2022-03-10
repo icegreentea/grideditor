@@ -15,6 +15,7 @@ import {
   checkTextWidth,
   getGridRow,
   getCellType,
+  checkTextHeight,
 } from "./helper";
 
 import {
@@ -50,6 +51,26 @@ class TextView {
     }
     this.parent_cell = parent_cell;
     this.render();
+  }
+
+  contentWidth() {
+    return Math.max(
+      ...checkTextWidth(
+        this.display_value,
+        window.getComputedStyle(this.parent_cell, null).getPropertyValue("font")
+      )
+    );
+  }
+
+  contentHeight() {
+    return checkTextHeight(
+      this.display_value,
+      window.getComputedStyle(this.parent_cell, null).getPropertyValue("font")
+    );
+  }
+
+  lines() {
+    return this.display_value.split(/\r?\n/).length;
   }
 
   getFragment() {
@@ -93,6 +114,10 @@ class TextEditor {
     this.#input.focus();
   }
 
+  getFragment() {
+    return this.fragment;
+  }
+
   render(): DocumentFragment {
     const frag = new DocumentFragment();
     const _input = document.createElement("textarea");
@@ -130,6 +155,14 @@ class NumberEditor {
     this.fragment = frag;
     return frag;
   }
+}
+
+type DataEditor = NumberEditor | TextEditor;
+type DataView = NumberView | TextView;
+type CellContent = DataEditor | DataView;
+
+interface BoundHTMLTableCellElement extends HTMLTableCellElement {
+  bound_content: CellContent;
 }
 
 type DataDefinition = {
@@ -257,8 +290,9 @@ class Grid {
     this.active_editor = editor;
     //const editor = document.createElement("textarea");
     //editor.value = `${this.getUnderlyingData(cell)}`;
-    cell.innerHTML = null;
-    cell.appendChild(editor.fragment);
+    this.bindCellContent(cell, editor);
+    //cell.innerHTML = null;
+    //cell.appendChild(editor.fragment);
     editor.focus();
   }
 
@@ -266,11 +300,19 @@ class Grid {
     const cell = this.active_editor.parent_cell;
     this.updateUnderlyingData(cell, this.active_editor.getEditorValue());
     const view = new TextView(this.active_editor.getEditorValue(), cell);
-    cell.innerHTML = null;
-    cell.appendChild(view.getFragment());
+    this.bindCellContent(cell, view);
+    //cell.innerHTML = null;
+    //cell.appendChild(view.getFragment());
     //cell.innerHTML = this.active_editor.getEditorValue();
     cell.classList.remove("cell-editor-enabled");
     this.active_editor = null;
+  }
+
+  bindCellContent(cell_element: HTMLTableCellElement, content: TextView | TextEditor) {
+    cell_element.innerHTML = null;
+    cell_element.appendChild(content.getFragment());
+    // @ts-ignore
+    cell_element.bound_content = content;
   }
 
   _createTable() {
@@ -402,8 +444,9 @@ class Grid {
         new_cell.setAttribute("data-cell-type", "data");
         //new_cell.textContent = data_row[column_name];
         const view = new TextView(data_row[column_name], new_cell);
-        new_cell.innerHTML = null;
-        new_cell.appendChild(view.getFragment());
+        //new_cell.innerHTML = null;
+        //new_cell.appendChild(view.getFragment());
+        this.bindCellContent(new_cell, view);
         new_row.appendChild(new_cell);
       }
       body.appendChild(new_row);

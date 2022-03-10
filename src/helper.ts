@@ -153,6 +153,17 @@ function checkTextWidth(text: string, font = null) {
   return Math.max(...widths);
 }
 
+function checkTextHeight(text: string, font = null) {
+  const lines = text.split(/\r?\n/);
+  const canvas =
+    checkTextWidth.canvas || (checkTextWidth.canvas = document.createElement("canvas"));
+  const context = canvas.getContext("2d");
+  if (font != null) {
+    context.font = font;
+  }
+  return context.measureText("test").fontBoundingBoxAscent * lines.length;
+}
+
 export {
   getLogicalCell,
   getLogicalCoord,
@@ -172,4 +183,5 @@ export {
   isCellWidthOverflow,
   getGridCol,
   checkTextWidth,
+  checkTextHeight,
 };
