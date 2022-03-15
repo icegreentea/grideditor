@@ -30,17 +30,13 @@ import {
 
 import { ScrollManager } from "./ScrollManager";
 
-type DataType = "text" | "number";
-
-type Editor = "text-multi" | "text-single";
-
 class TextView {
   input_value: any;
   display_value: string;
   value: string;
   parent_cell: HTMLTableCellElement;
   fragment: DocumentFragment;
-  constructor(value, parent_cell) {
+  constructor(value, parent_cell: HTMLTableCellElement) {
     this.input_value = value;
     if (value == null) {
       this.display_value = "";
@@ -90,14 +86,12 @@ class TextView {
   }
 }
 
-class NumberView {}
-
 class TextEditor {
   initial_value: string;
   fragment: DocumentFragment;
   parent_cell: HTMLTableCellElement;
   #input;
-  constructor(initial_value, parent_cell) {
+  constructor(initial_value, parent_cell: HTMLTableCellElement) {
     if (initial_value == null) initial_value = "";
     this.parent_cell = parent_cell;
     this.initial_value = initial_value;
@@ -131,35 +125,7 @@ class TextEditor {
   }
 }
 
-class NumberEditor {
-  initial_value: number;
-  fragment: DocumentFragment;
-  #input;
-  constructor(initial_value) {
-    this.initial_value = initial_value;
-  }
-
-  check() {}
-
-  getEditorValue() {
-    return parseFloat(this.#input.value);
-  }
-
-  render(): DocumentFragment {
-    const frag = new DocumentFragment();
-    const _input = document.createElement("input");
-    _input.type = "text";
-    _input.value = this.initial_value.toString();
-    this.#input = _input;
-    frag.appendChild(_input);
-    this.fragment = frag;
-    return frag;
-  }
-}
-
-type DataEditor = NumberEditor | TextEditor;
-type DataView = NumberView | TextView;
-type CellContent = DataEditor | DataView;
+type CellContent = TextEditor | TextView;
 
 interface BoundHTMLTableCellElement extends HTMLTableCellElement {
   bound_content: CellContent;
@@ -180,6 +146,89 @@ function parse_keys(data: object[]) {
   return keys;
 }
 
+class DataBase {
+  data_rows: any[];
+  data_defintion: DataDefinition[];
+
+  constructor(data_defintion: DataDefinition[], data_rows: any[]) {
+    this.data_rows = data_rows;
+    this.data_defintion = data_defintion;
+    const data_keys = new Set(this.data_defintion.map((def) => def.name));
+
+    data_rows.forEach((data_row, idx) => {
+      for (const [key, value] of Object.entries(data_row)) {
+        if (data_keys.has(key)) {
+        }
+      }
+    });
+  }
+
+  getValue(row_ref, column_ref) {
+    return this.data_rows[row_ref][column_ref];
+  }
+
+  setValue(row_ref, column_ref, new_value) {
+    this.data_rows[row_ref][column_ref] = new_value;
+  }
+
+  getDataReference(row_ref, column_ref): DataReference {
+    return {
+      getValue: () => {
+        return this.getValue(row_ref, column_ref);
+      },
+      setValue: (new_value) => {
+        this.setValue(row_ref, column_ref, new_value);
+      },
+    };
+  }
+}
+
+type TableCellMode = "view" | "edit";
+
+interface DataReference {
+  getValue(): string;
+  setValue(v: string): void;
+}
+
+class TableCell {
+  table_element: HTMLTableElement;
+  cell_element: HTMLTableCellElement;
+  cell_content: CellContent;
+  mode: TableCellMode;
+  data_ref: DataReference;
+
+  constructor(table_element, cell_element, data_reference: DataReference) {
+    this.table_element = table_element;
+    this.cell_element = cell_element;
+    this.mode = "view";
+    this.data_ref = data_reference;
+    this.cell_content = new TextView(this.data_ref.getValue(), cell_element);
+  }
+
+  enableEdit(focus = true) {
+    if (this.mode == "edit") return;
+    this.mode = "edit";
+    this.cell_content = new TextEditor(this.data_ref.getValue(), this.cell_element);
+    this.cell_element.innerHTML = null;
+    this.cell_element.appendChild(this.cell_content.getFragment());
+    if (focus) {
+      this.cell_content.focus();
+    }
+  }
+
+  disableEdit(save_changes = true) {
+    if (this.mode == "view") return;
+    this.mode = "view";
+    if (save_changes) {
+      const new_value = (this.cell_content as TextEditor).getEditorValue();
+      this.data_ref.setValue(new_value);
+    }
+    this.cell_content = new TextView(this.data_ref.getValue(), this.cell_element);
+    this.cell_element.innerHTML = null;
+    this.cell_element.append(this.cell_content.getFragment());
+  }
+}
+
 type GridMode = "view" | "edit";
 
 class Grid {
@@ -193,12 +242,16 @@ class Grid {
   data_definition: DataDefinition[];
   data: object[];
   active_editor;
+  data_base: DataBase;
   #grid_mode: GridMode = "view";
+  table_cells: TableCell[][];
 
   constructor(element: HTMLDivElement, header_data: DataDefinition[], data: object[]) {
     this.target_element = element;
     this.data_definition = header_data;
     this.data = data;
+
+    this.data_base = new DataBase(header_data, data);
 
     this._createTable();
 
@@ -285,27 +338,33 @@ class Grid {
   enableEdit(logical_x, logical_y) {
     const cell = getLogicalCell(this.table_element, logical_x, logical_y);
     cell.classList.add("cell-editor-enabled");
-    const original_content = cell.textContent;
-    const editor = new TextEditor(this.getUnderlyingData(cell), cell);
-    this.active_editor = editor;
+    cell.cell_obj.enableEdit();
+
+    //const original_content = cell.textContent;
+    //const editor = new TextEditor(this.getUnderlyingData(cell), cell);
+    //this.active_editor = editor;
     //const editor = document.createElement("textarea");
     //editor.value = `${this.getUnderlyingData(cell)}`;
-    this.bindCellContent(cell, editor);
+    //this.bindCellContent(cell, editor);
     //cell.innerHTML = null;
     //cell.appendChild(editor.fragment);
-    editor.focus();
+    //editor.focus();
   }
 
   disableEdit(logical_x, logical_y) {
-    const cell = this.active_editor.parent_cell;
-    this.updateUnderlyingData(cell, this.active_editor.getEditorValue());
-    const view = new TextView(this.active_editor.getEditorValue(), cell);
-    this.bindCellContent(cell, view);
+    const cell = getLogicalCell(this.table_element, logical_x, logical_y);
+
+    //const cell = this.active_editor.parent_cell;
+    cell.classList.remove("cell-editor-enabled");
+    cell.cell_obj.disableEdit();
+    //this.updateUnderlyingData(cell, this.active_editor.getEditorValue());
+    //const view = new TextView(this.active_editor.getEditorValue(), cell);
+    //this.bindCellContent(cell, view);
     //cell.innerHTML = null;
     //cell.appendChild(view.getFragment());
     //cell.innerHTML = this.active_editor.getEditorValue();
-    cell.classList.remove("cell-editor-enabled");
-    this.active_editor = null;
+    //cell.classList.remove("cell-editor-enabled");
+    //this.active_editor = null;
   }
 
   bindCellContent(cell_element: HTMLTableCellElement, content: TextView | TextEditor) {
@@ -437,6 +496,15 @@ class Grid {
 
       for (const [col_idx, column_name] of column_order.entries()) {
         let new_cell = document.createElement("td");
+        const cell_obj = new TableCell(
+          this.table_element,
+          new_cell,
+          this.data_base.getDataReference(row_idx, column_name)
+        );
+
+        //
+        new_cell.cell_obj = cell_obj;
+
         new_cell.setAttribute("data-grid-y", row_idx + SPACER_ROWS);
         new_cell.setAttribute("data-logical-y", row_idx);
         new_cell.setAttribute("data-grid-x", col_idx + SPACER_COLS);
@@ -747,6 +815,12 @@ class EventManager {
       }
       this.selection_manager.onTableCellMouseDown(e);
     }
+  }
+}
+
+declare global {
+  interface HTMLTableCellElement {
+    cell_obj: TableCell;
   }
 }
 

@@ -138,6 +138,8 @@ declare global {
     setAttribute(name: string, value: boolean): void;
     setAttribute(name: string, value: number): void;
   }
+
+  interface HTMLTableCellElement {}
 }
 
 function checkTextWidth(text: string, font = null) {
