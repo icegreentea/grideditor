@@ -57,15 +57,55 @@ class ScrollManager {
   timer;
   #mousehold_active: boolean = false;
   previous_mouse_state: MouseState;
-  column_resize_active = false;
-  column_being_resized: HTMLElement;
-  row_resize_active = false;
-  row_being_resized: HTMLElement;
+  #column_being_resized: HTMLElement;
+  #row_being_resized: HTMLElement;
 
   constructor(table_element, scroll_element) {
     this.table_element = table_element;
     this.scroll_element = scroll_element;
     this.timer = setInterval(() => this.onTimerTick(), 50);
+  }
+
+  get resize_active() {
+    return this.#row_being_resized != null || this.#column_being_resized != null;
+  }
+
+  get column_resize_active() {
+    return this.#column_being_resized != null;
+  }
+
+  get row_resize_active() {
+    return this.#row_being_resized != null;
+  }
+
+  get column_being_resized() {
+    return this.#column_being_resized;
+  }
+
+  public set column_being_resized(v: HTMLElement) {
+    if (v != this.#column_being_resized) {
+      this.#column_being_resized = v;
+      if (v == null) {
+        this.raiseResizeInactive();
+      } else {
+        this.raiseResizeActive();
+      }
+    }
+  }
+
+  get row_being_resized() {
+    return this.#row_being_resized;
+  }
+
+  public set row_being_resized(v: HTMLElement) {
+    if (v != this.#row_being_resized) {
+      this.#row_being_resized = v;
+      if (v == null) {
+        this.raiseResizeInactive();
+      } else {
+        this.raiseResizeActive();
+      }
+    }
   }
 
   get mousehold_active() {
@@ -77,6 +117,14 @@ class ScrollManager {
       //console.log("Scroll manager mousehold switching to", v);
       this.#mousehold_active = v;
     }
+  }
+
+  raiseResizeActive() {
+    document.dispatchEvent(new Event("resizeactive"));
+  }
+
+  raiseResizeInactive() {
+    document.dispatchEvent(new Event("resizeinactive"));
   }
 
   raiseMouseDragOffGridMove(ev?: MouseDragOffGridEvent) {
@@ -127,11 +175,9 @@ class ScrollManager {
   onMouseUp(e: MouseEvent) {
     this.mousehold_active = false;
     if (this.column_resize_active) {
-      this.column_resize_active = false;
       this.column_being_resized = null;
     }
     if (this.row_resize_active) {
-      this.row_resize_active = false;
       this.row_being_resized = null;
     }
   }
@@ -416,12 +462,10 @@ class ScrollManager {
 
   initializeColumnResize(column_grid_idx: number) {
     this.column_being_resized = getGridCell(this.table_element, column_grid_idx, 0);
-    this.column_resize_active = true;
   }
 
   initializeRowResize(row_grid_idx: number) {
     this.row_being_resized = getGridCell(this.table_element, 0, row_grid_idx);
-    this.row_resize_active = true;
   }
 }
 

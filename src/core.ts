@@ -668,6 +668,12 @@ class EventManager {
     document.addEventListener("mousedragoffgridmove", (e: CustomEvent) =>
       this.selection_manager.onMouseDragOffGridMove(e)
     );
+    document.addEventListener("resizeactive", (e) => {
+      this.selection_manager.selection_enabled = false;
+    });
+    document.addEventListener("resizeinactive", (e) => {
+      this.selection_manager.selection_enabled = true;
+    });
     this._bindTableCellEvents();
   }
 

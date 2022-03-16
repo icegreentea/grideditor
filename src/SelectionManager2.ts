@@ -32,6 +32,7 @@ class SelectionManager {
   #mousehold_active = false;
   #selection_type: SelectionType;
   #selection_enabled = true;
+  #selection_change_enabled = true;
 
   shift_active = false;
   #table_element: HTMLTableElement = null;
@@ -50,6 +51,16 @@ class SelectionManager {
     this.cell_selection_manager = new CellSelectionManager();
     this.row_selection_manager = new RowSelectionManager();
     this.column_selection_manager = new ColumnSelectionManager();
+  }
+
+  get selection_change_enabled(): boolean {
+    return this.#selection_change_enabled;
+  }
+
+  public set selection_change_enabled(v: boolean) {
+    if (v != this.#selection_change_enabled) {
+      this.#selection_change_enabled = v;
+    }
   }
 
   get selection_enabled(): boolean {
